@@ -1,0 +1,10 @@
+__init__.py
+*.pyc
+\#*\#
+*~
+external/vpython
+*.root
+.\#*
+*.o
+*.tar
+external/src
