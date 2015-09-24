@@ -1,3 +1,4 @@
+local_settings.sh
 __init__.py
 *.pyc
 \#*\#
