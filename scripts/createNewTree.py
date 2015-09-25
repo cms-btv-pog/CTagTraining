@@ -98,7 +98,7 @@ def processNtuple(infile_name, outfile_name, variables, sample,
           setattr(outtree, name, value)
         total_weight = 1.
         if pteta_weight:
-          bin_idx = weights.FindBin(entry.jetPt, abs(entry.jetEta))
+          bin_idx = weights.FindFixBin(entry.jetPt, abs(entry.jetEta))
           outtree.kinematic_weight = weights[bin_idx].value
           total_weight *= weights[bin_idx].value
         if flav_weight:
