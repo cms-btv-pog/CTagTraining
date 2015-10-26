@@ -22,3 +22,9 @@ fi
 # Make sure we prefer our virtualenv packages
 export PYTHONPATH=$vpython/lib/python2.7/site-packages/:$PYTHONPATH
 
+if [ -e $CTRAIN/local_settings.sh ]
+then
+    source $CTRAIN/local_settings.sh
+else
+    echo "I did not find local_settings.sh, this will default some settings (like tree storage)"
+fi

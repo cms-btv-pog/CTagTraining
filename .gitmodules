@@ -4,3 +4,6 @@
 [submodule "external/src/rootpy"]
 	path = external/src/rootpy
 	url = https://github.com/rootpy/rootpy.git
+[submodule "external/src/root_numpy"]
+	path = external/src/root_numpy
+	url = https://github.com/rootpy/root_numpy.git

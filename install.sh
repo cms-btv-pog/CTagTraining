@@ -34,6 +34,8 @@ echo "Installing yolk -- python package management"
 pip install -U yolk
 echo "Installing rootpy -- pyRoot done right"
 pip install -e $external/src/rootpy
+echo "Installing root_numpy -- connection between ROOT and numpy"
+pip install -e $external/src/root_numpy
 echo "Installing scikit-learn -- python machine learning"
 pip install -U scikit-learn
 

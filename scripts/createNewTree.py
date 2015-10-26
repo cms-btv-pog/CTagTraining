@@ -1,249 +1,184 @@
+#! /bin/env python
+
 import sys
 import os
-sys.argv.append( '-b-' )
-from ROOT import *
+
 from array import array
 import time
 import math
 import multiprocessing
+import rootpy.io as io
+from rootpy.tree import Tree
+import prettyjson
+from RecoBTag.CTagging.trainingvars import training_vars
+from argparse import ArgumentParser
+import rootpy
+from pdb import set_trace
+import re
+log = rootpy.log["/createNewTree"]
+log.setLevel(rootpy.log.INFO)
 
-
-def processNtuple(inFileName, outDirName, startEntry, endEntry, variables):
+def processNtuple(infile_name, outfile_name, variables, sample, 
+                  flav_weight=False, pteta_weight=False, cat_weight=False,
+                  tag=''):  
+  log.debug("processing %s --> %s" % (infile_name, outfile_name))
+  type_dict = {
+    'i' : int,
+    'l' : long,
+    'f' : float
+    }
   
-  print "Starting to process events %i to %i" %(startEntry, endEntry)
-  # retrieve the ntuple of interest
-  inFile = TFile( inFileName )
-  inTreeName = inFileName.rsplit("/",1)[1].replace("skimmed_20k_eachptetabin_", "").split("_",1)[0]
-  mychain = gDirectory.Get( inTreeName )
-  branchList = mychain.GetListOfBranches()
+  fname_regex = re.compile('[a-zA-Z_0-9\/]*\/?[a-zA-Z_0-9]+_(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
+  match = fname_regex.match(infile_name)
+
+  if not match:
+    raise ValueError("Could not match the regex to the file %s" % infile_name)
+  flavor = match.group('flavor')
+  full_category = match.group('category')
+  if pteta_weight:    
+    weight_file = io.root_open('data/%s_pt_eta_weights.root' % sample)
+    flav_dir = weight_file.Get(flavor)
+    categories = [i.name for i in flav_dir.keys()]
+    category = [i for i in categories if i in full_category][0]
+    weights = flav_dir.Get(category)
+
+  flavor_weight = 1.
+  if flav_weight:
+    flavor_weight = prettyjson.loads(
+      open('data/%s_flavor_weights.json' % sample).read()
+      )[flavor]
+
+  #put bias weights
+  category_weight = 1.
+  if cat_weight:
+    categories_qcd = prettyjson.loads(
+      open('data/qcd_category_weights.json').read()
+      )[flavor]
+    categories_ttj = prettyjson.loads(
+      open('data/ttjets_category_weights.json').read()
+      )[flavor]
+    category = [i for i in categories_qcd.keys() if i in full_category][0]
+    category_weight = categories_qcd[category] / categories_ttj[category] \
+       if sample == 'qcd' else \
+       categories_ttj[category] / categories_qcd[category]
   
-  # output
-  outFileName = "%s/%s_%i-%i.root" %(outDirName, inFileName.rsplit("/",1)[1].rsplit(".",1)[0], startEntry, endEntry)
-  print outFileName
-  outFile = TFile( outFileName, 'recreate' )
-  outTree = TTree( 'tree', 'c-tagging training tree' )
-
-
-  # loop over variable sets and create new branches
-  outVariables = {}
-  for varSet in variables:
-    if (len(varSet) == 3):
-        #print "%s: %f" %(varSet[0], float(getattr(mychain, varSet[0])))
-        outVariables[varSet[0]] = array( varSet[1], [ 0 ] )
-        outTree.Branch( varSet[0], outVariables[varSet[0]], '%s/%s'%(varSet[0], varSet[1].upper()) )
-        # print outVariables[varSet[0]]
-    elif (len(varSet) == 4):
-      for vecIndex in range(varSet[3]):
-        #print "%s[%i]: %f" %(varSet[0], vecIndex, float(varVector[vecIndex]))
-        varName = "%s_%i"%(varSet[0],vecIndex)
-        outVariables[varName] = array( varSet[1], [ 0 ] )
-        # print outVariables[varName]
-        outTree.Branch( varName, outVariables[varName], '%s/%s'%(varName, varSet[1].upper()) )
-
-
-  ### actual loop ###
-  print "%s: Starting event loop" %(multiprocessing.current_process().name)
-  startTime = time.time()
-  for jentry in xrange(startEntry, endEntry):
-  # get the next tree in the chain and verify
-    ientry = mychain.LoadTree( jentry )
-    if ientry < 0:
-      print "%s: Problem loading tree for event: %i" %(multiprocessing.current_process().name, ientry)
-      break
-
-    # timing
-    if (ientry%10000==0):
-      if (ientry != startEntry):
-        print "%s: Progress: %3.1f%%" %(multiprocessing.current_process().name, float(ientry-startEntry)/(endEntry-startEntry)*100)
-        endTime = time.time()
-        deltaTime = endTime - startTime
-        rate = 10000./deltaTime
-        print "%s: current rate: %5.2f Hz" %(multiprocessing.current_process().name, rate)
-        startTime = time.time()
-
-   # copy next entry into memory and verify
-    nb = mychain.GetEntry( jentry )
-    if nb <= 0:
-      print "%s: Problem getting entry %i" %(multiprocessing.current_process().name, jentry)
-      continue
-
-    # loop over variables
-    # use the values directly from the tree
-    for varSet in variables:
-      # non-vector variable
-      if (len(varSet) == 3):
-        if varSet[0] not in branchList:
-          # assign default value
-          outVariables[varSet[0]][0] = varSet[2]
-        elif (varSet[1] == "f"):
-          #print "%s: %f" %(varSet[0], float(getattr(mychain, varSet[0])))
-          outVariables[varSet[0]][0] = float(getattr(mychain, varSet[0]))
-          # print outVariables[varSet[0]]
-        elif (varSet[1] == "i"):
-          # print "%s: %i" %(varSet[0], int(getattr(mychain, varSet[0])))
-          outVariables[varSet[0]][0] = int(getattr(mychain, varSet[0]))
-          # print outVariables[varSet[0]]
-        else:
-          print "ERROR: %s type not known for variables %s" %(varSet[1], varSet[0])
-      # vector variable to be decomposed
-      elif (len(varSet) == 4):
-        if varSet[0] not in branchList:
-          for vecIndex in range(varSet[3]):
-            varName = "%s_%i"%(varSet[0],vecIndex)
-            outVariables[varName][0] = varSet[2]
-        else:
-          varVector = getattr(mychain, varSet[0])
-          for vecIndex in range(min(varVector.size(), varSet[3])):
-            # print "%s[%i]: %f" %(varSet[0], vecIndex, float(varVector[vecIndex]))
-            varName = "%s_%i"%(varSet[0],vecIndex)
-            if (varSet[1] == "f"):
-              outVariables[varName][0] = float(varVector[vecIndex])
-            elif (varSet[1] == "i"):
-              outVariables[varName][0] = int(varVector[vecIndex])
+  with io.root_open(outfile_name, 'recreate') as outfile:
+    outtree = Tree('tree', title='c-tagging training tree')
+    branches_def = dict((name, info['type']) for name, info in variables.iteritems())
+    if pteta_weight:
+      branches_def['kinematic_weight'] = 'F'
+      branches_def['total_weight'] = 'F'
+    if flav_weight:
+      branches_def['flavour_weight'] = 'F'
+      branches_def['total_weight'] = 'F'
+    if cat_weight:
+      branches_def['slcategory_weight'] = 'F'
+      branches_def['total_weight'] = 'F'
+        
+    outtree.create_branches(
+      branches_def
+      )
+    with io.root_open(infile_name) as infile:
+      intree = infile.Get(full_category)
+      for e_idx, entry in enumerate(intree):
+        if e_idx % 1000 == 0:
+          log.debug("processing entry: %i" % e_idx)
+        for name, info in variables.iteritems():
+          value = info['default']
+          if hasattr(entry, info['var']):
+            var = getattr(entry, info['var'])
+            vtype = type_dict[info['type'].lower()]
+            if 'idx' in info:
+              if var.size() > info['idx']:
+                value = vtype(var[info['idx']])
             else:
-              print "ERROR: %s type not known for variables %s" %(varSet[1], varSet[0])
-            if (math.isnan(outVariables[varName][0])):
-              outVariables[varName][0] = varSet[2]
-    outTree.Fill()
-  
-  outFile.Write()
-  outFile.Close()
-  inFile.Close()
-  print "%s: Total time: %5.2f s" %(multiprocessing.current_process().name, time.clock())
+              value = vtype(var)
+          #if value is nan, then set to default (maybe better if you skip the whole jet)
+          value = info['default'] if math.isnan(value) else value
+          setattr(outtree, name, value)
+        total_weight = 1.
+        if pteta_weight:
+          bin_idx = weights.FindFixBin(entry.jetPt, abs(entry.jetEta))
+          outtree.kinematic_weight = weights[bin_idx].value
+          total_weight *= weights[bin_idx].value
+        if flav_weight:
+          outtree.flavour_weight = flavor_weight
+          total_weight *= flavor_weight
+        if cat_weight:
+          outtree.slcategory_weight = category_weight
+          total_weight *= category_weight
+        if 'total_weight' in branches_def:
+          outtree.total_weight = total_weight
+          
+        outtree.Fill()
+  log.info("processing done [%s]" % tag)
 
-
-
-def main():
-
-  ROOT.gROOT.SetBatch(True)
+def main(args):
   parallelProcesses = multiprocessing.cpu_count()
   
-  outDirName = '/scratch/vlambert/TMVA/QCD_flat/'
+  outDirName = '%s/scripts/data/flat_trees/' % os.environ['CTRAIN'] if 'CTAG_FLAT_TREES_LOCATION' not in os.environ else os.environ['CTAG_FLAT_TREES_LOCATION']
+  outDirName = os.path.join(outDirName, args.sample)
+  if 'CTAG_FLAT_TREES_LOCATION' not in os.environ:
+    log.warning("CTAG_FLAT_TREES_LOCATION was not set in the environment, therefore I will dump the trees into data/flat_trees")
   if not os.path.exists(outDirName):
     print "Creating new output directory: ", outDirName
     os.makedirs(outDirName)
-  eventsPerJob = 250000
   
-  # QCD sample
-  inFileList = [
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2NoVertex_B.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2NoVertex_C.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2NoVertex_DUSG.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2PseudoVertex_B.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2PseudoVertex_C.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2PseudoVertex_DUSG.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2RecoVertex_B.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2RecoVertex_C.root',
-    '/scratch/vlambert/TMVA/QCD_training/skimmed_20k_eachptetabin_CombinedSVV2RecoVertex_DUSG.root']
-
-  
-
-  # 
-  inFileList = [
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2NoVertex_B.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2NoVertex_C.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2NoVertex_DUSG.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2PseudoVertex_B.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2PseudoVertex_C.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2PseudoVertex_DUSG.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2RecoVertex_B.root',
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2RecoVertex_C.root']
-    #'/scratch/vlambert/TMVA/QCD_training/CombinedSVV2RecoVertex_DUSG.root']
-               
+  input_files = [i.strip() for i in open('data/inputs/%s.list' % args.sample)]
                 
-
-
+  variables = training_vars.keys() #just pick all for the moment
+  branches = {}
+  for varname in variables:
+    varinfo = training_vars[varname]
+    if 'max_idx' in varinfo:
+      for idx in range(varinfo['max_idx']):
+        branches['%s_%i' % (varname, idx)] = {
+          'type' : varinfo['type'].swapcase(), 
+          'default' : varinfo['default'],
+          'var' : varname,
+          'idx' : idx
+          }
                 
-  variables = [ # define as ["variable name", "variable type (f/i)", default value, in case of vector: max. length]
-                ["flavour", "i", -1],
-                ["jetPt", "f", -1],
-                ["trackJetPt", "f", -1],
-                ["jetEta", "f", -3],
-                ["vertexCategory", "i", -1],
-          			["trackSip2dSig", "f", -100, 3], # centered around 0
-          			["trackSip3dSig", "f", -100, 3], # centered around 0
-          			["trackSip2dVal", "f", -1, 3], # centered around 0
-          			["trackSip3dVal", "f", -1, 3], # centered around 0
-          			["trackPtRel", "f", -1, 3], # exponentially falling from 0 to ~450
-          			["trackPPar", "f", -1, 3], # exponentially falling from 0 to ~10000
-          			["trackEtaRel", "f", -1, 3], # distribution from 1 to 10
-          			["trackDeltaR", "f", -0.1, 3], # distribution from 0 to 0.3
-          			["trackPtRatio", "f", -0.1, 3], # distribution from 0 to 0.3
-          			["trackPParRatio", "f", 1.1, 3], # from 0.95 increasing exponentially to peak at 1
-          			["trackJetDist", "f", -0.1, 3], # exponentially rising distribution from -0.07 to peak at 0
-          			["trackDecayLenVal", "f", -0.1, 3], # exponentially falling from 0 to ~5
-          			["vertexMass", "f", -0.1, 1], # exponentially falling from 0 to ~450
-          			["vertexNTracks", "i", 0, 1], # at least two tracks make a vertex
-          			["vertexEnergyRatio", "f", -10, 1], # positive values, larger than zero (can get large, but mostly < 2)
-          			["trackSip2dSigAboveCharm", "f", -999, 1], # peaks at zero
-          			["trackSip3dSigAboveCharm", "f", -999, 1], # peaks at zero
-          			["flightDistance2dSig", "f", -1, 1], # exponentially falling from 0 up to ~200
-          			["flightDistance3dSig", "f", -1, 1], # exponentially falling from 0 up to ~300
-          			["flightDistance2dVal", "f", -0.1, 1], # exponentially falling from 0 up to ~2.5
-          			["flightDistance3dVal", "f", -0.1, 1], # exponentially falling from 0 up to ~14
-          			["trackSumJetEtRatio", "f", -0.1], # 0 to ~8
-          			["jetNSecondaryVertices", "i", 0],
-          			["vertexJetDeltaR", "f", -0.1, 1], # 0 to 0.5
-          			["trackSumJetDeltaR", "f", -0.1], # exponentially falling from 0 up to ~3
-          			["jetNTracks", "i", -0.1], # from 0 to 1
-          			["trackSip2dValAboveCharm", "f", -1, 1], # default -1 in case not reached
-          			["trackSip3dValAboveCharm", "f", -1, 1], # default -1 in case not reached
-          			["vertexFitProb", "f", -1, 1], # largely from 0 to ~10, but some outliers
-          			["chargedHadronEnergyFraction", "f", -0.1], # 0 to 1
-          			["neutralHadronEnergyFraction", "f", -0.1], # 0 to 1
-          			["photonEnergyFraction", "f", -0.1], # 0 to 1
-          			["electronEnergyFraction", "f", -0.1], # 0 to 1
-          			["muonEnergyFraction", "f", -0.1], # 0 to 1
-          			["chargedHadronMultiplicity", "i", -1],
-          			["neutralHadronMultiplicity", "i", -1],
-          			["photonMultiplicity", "i", -1],
-          			["electronMultiplicity", "i", -1],
-          			["muonMultiplicity", "i", -1],
-          			["hadronMultiplicity", "i", -1],
-          			["hadronPhotonMultiplicity", "i", -1],
-          			["totalMultiplicity", "i", -1],
-          			["massVertexEnergyFraction", "f", -0.1, 1], # distribution from 0 to ~5 with peak at 0
-          			["vertexBoostOverSqrtJetPt", "f", -0.1, 1], # distribution from 0 to 1 with peak at 0
-               ]
-                
-  for inFileName in inFileList:
-
-    #inFileName = '/scratch/clange/CSV_AK5_JT5/QCD_training/CombinedSVV2RecoVertex_B.root'
-
-    # retrieve the ntuple of interest to determine number of events
-    inFile = TFile( inFileName )
-    inTreeName = inFileName.rsplit("/",1)[1].replace("skimmed_20k_eachptetabin_", "").split("_",1)[0]
-    print "Using tree with name: ", inTreeName 
-    mychain = gDirectory.Get( inTreeName )
-    branchList = mychain.GetListOfBranches()
-    entries = mychain.GetEntriesFast()
-    inFile.Close()
+  # create Pool
+  pool = multiprocessing.Pool(parallelProcesses)
+  print "Using %i parallel processes" % parallelProcesses
   
-    # create Pool
-    p = multiprocessing.Pool(parallelProcesses)
-    print "Using %i parallel processes" %parallelProcesses
+  # run jobs
+  nfiles = len(input_files)
+  for idx, infile in enumerate(input_files): 
+    base_input = os.path.basename(infile)
+    outfile = os.path.join(outDirName, 'flat_%s' % base_input)
+    proc_args = (
+      infile, outfile, branches, args.sample,
+      args.flav_weight, args.kin_weight, args.cat_weight
+      )
+    if args.debug:
+      processNtuple(*proc_args)
+    else:
+      pool.apply_async(
+        processNtuple, 
+        args = (
+          infile, outfile, branches, args.sample, 
+          args.flav_weight, args.kin_weight, args.cat_weight,
+          '%i/%i' % (idx, nfiles)
+          )
+        )
+  pool.close()
+  pool.join()
   
-    # create jobs based on number of events
-    eventsList = []
-    startEvent = 0
-    while (startEvent < entries):
-      eventsList.append(startEvent)
-      startEvent += eventsPerJob
-    eventsList.append(entries+1)
-    print "%i jobs to run" %(len(eventsList)-1)
-
-    # debug
-    # processNtuple(inFileName, outDirName, eventsList[0], eventsList[1]-1, variables)
-    # run jobs
-    for i in range(len(eventsList)-1):
-      p.apply_async(processNtuple, args = (inFileName, outDirName, eventsList[i], eventsList[i+1]-1, variables,))
-    p.close()
-    p.join()
-  
-  print "done"  
-
 
 if __name__ == "__main__":
-  main()
+  parser = ArgumentParser()
+  parser.add_argument('sample', help='sample to run on qcd or ttjets')
+  parser.add_argument('--apply-pteta-weight',  dest='kin_weight', action='store_true', help='applies pt-eta weight')
+  parser.add_argument('--apply-category-weight',  dest='cat_weight', action='store_true', help='applies category weight (from both qcd and ttjets)')
+  parser.add_argument('--apply-flavor-weight', dest='flav_weight', action='store_true', help='applies flavour weight')
+  parser.add_argument('--debug', action='store_true', help='does not run in parallel')
+  args = parser.parse_args()
+  if args.debug:
+    log.setLevel(rootpy.log.DEBUG)
+  import ROOT
+  ROOT.gROOT.SetBatch(True)
+  main(args)
 
 #  LocalWords:  inFileList
