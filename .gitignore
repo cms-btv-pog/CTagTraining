@@ -1,0 +1,11 @@
+local_settings.sh
+__init__.py
+*.pyc
+\#*\#
+*~
+external/vpython
+*.root
+.\#*
+*.o
+*.tar
+external/src
