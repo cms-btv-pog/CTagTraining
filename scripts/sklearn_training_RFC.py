@@ -106,8 +106,13 @@ eta_bins = [1.2, 2.1]
 #sv_categories = ["NoVertex", "PseudoVertex", "RecoVertex"]
 fname_regex = re.compile('[a-zA-Z_0-9\/]*\/(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
 
+# you can reload the training if needed (or if you only want to do a validation on an existing training)
+# but it is much faster to use the still existing classifier from the training
+'''
 print 'Loading training file from: ' + training_file
 clf_val = joblib.load(training_file)
+'''
+clf_val = clf
 
 for fname in input_files:
    log.info('processing file %s' % fname)
@@ -141,3 +146,4 @@ for fname in input_files:
       tree = rootnp.array2root(Output_tree_final, 'trainPlusBDTG_CombinedSV'+category+'_'+flavor+'.root', 'tree') 
       log.info('Output file dumped in trainPlusBDTG_CombinedSV'+category+'_'+flavor+'.root')   
       
+log.info('done')
