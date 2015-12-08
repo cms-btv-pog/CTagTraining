@@ -11,7 +11,7 @@ from pdb import set_trace
 import copy
 import binning 
 import ROOT
-log = rootpy.log["/toy_diagnostics"]
+log = rootpy.log["/compute_weights"]
 log.setLevel(rootpy.log.INFO)
 
 qcd_yields = prettyjson.loads(open('data/qcd_yields.json'   ).read())
@@ -90,7 +90,7 @@ for flavour in flavours:
    flav_yield = sum( k for j in qcd_yields[flavour].itervalues() for k in j.itervalues() )
    corr_yield = 0
    for bin in bins:
-      bin_yield = sum(qcd_yields[flavour][i][bin] for i in categories)
+      bin_yield = sum(biased_qcd[flavour][i][bin] for i in categories)
       for category in categories:
          bin_weight[flavour][category][bin] = 1./bin_yield if bin_yield else 0
          final_qcd[flavour][category][bin] *= 1./bin_yield if bin_yield else 0
@@ -139,8 +139,13 @@ for flavour in flavours:
       assert(ratios_are_ok(bias_qcds, ttjs))
 
 ##
-##  STORE IN H2D
+##  STORE IN H2D and jsons
 ##
+
+with open('data/qcd_bin_weights.json', 'w') as out:
+   out.write(
+      prettyjson.dumps(bin_weight)
+      )   
 
 with io.root_open('data/qcd_weights.root', 'w') as out:
    fweights = ROOT.TObjString(prettyjson.dumps(flav_weights))
