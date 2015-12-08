@@ -24,7 +24,7 @@ $(DATA)/qcd_flavor_weights.json: $(DATA)/qcd_yields.json $(DATA)/ttjets_yields.j
 weights: $(DATA)/qcd_flavor_weights.json
 
 #flat trees tasks
-$(DATA)/flat_trees/qcd/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py $(DATA)/qcd_flavor_weights.json $(DATA)/ttjets_flavor_weights.json
+$(DATA)/flat_trees/qcd/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py
 	./createNewTree.py qcd --apply-pteta-weight --apply-category-weight --apply-flavor-weight && touch $@
 
 #ttjets do not have weights
