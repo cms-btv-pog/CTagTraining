@@ -4,95 +4,165 @@ from argparse import ArgumentParser
 import rootpy.io as io
 from rootpy.plotting import Hist2D
 import prettyjson
-from itertools import product 
 import glob
 import re
 import rootpy
 from pdb import set_trace
-log = rootpy.log["/toy_diagnostics"]
+import copy
+import binning 
+import ROOT
+log = rootpy.log["/compute_weights"]
 log.setLevel(rootpy.log.INFO)
 
-parser = ArgumentParser()
-parser.add_argument('sample', help='sample to run on qcd or ttjets')
-parser.add_argument('--compute-flavor', dest='flav_w', action='store_true', help='compute flavor weight')
-parser.add_argument('--debug',  action='store_true', help='debug mode')
-args = parser.parse_args()
-if args.debug:
-   log.setLevel(rootpy.log.DEBUG)
+qcd_yields = prettyjson.loads(open('data/qcd_yields.json'   ).read())
+ttj_yields = prettyjson.loads(open('data/ttjets_yields.json').read())
 
-input_files = [i.strip() for i in open('data/inputs/%s.list' % args.sample)]
+biased_qcd = copy.deepcopy(qcd_yields)
 
-pt_bins = [15, 40, 60, 90, 150, 400, 600]
-eta_bins = [1.2, 2.1]
-flavors = ['C', 'B', 'DUSG']
-sv_categories = ["NoVertex", "PseudoVertex", "RecoVertex"]
-weights = {}
-fname_regex = re.compile('[a-zA-Z_0-9\/]*\/?[a-zA-Z_0-9]+_(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
+cat_weight = copy.deepcopy(qcd_yields)
+bin_weight = copy.deepcopy(qcd_yields)
 
-for flavor in flavors:
-   weights[flavor] = {}
-   for category in sv_categories:
-      weights[flavor][category] = Hist2D(pt_bins, eta_bins)
+flavours = qcd_yields.keys()
+categories = qcd_yields[flavours[0]].keys()
+bins = qcd_yields[flavours[0]][categories[0]].keys()
 
-for fname in input_files:
-   log.info('processing file %s' % fname)
-   with io.root_open(fname) as tfile:
-      match = fname_regex.match(fname)
-      if not match:
-         raise ValueError("Could not match the regex to the file %s" % fname)
-      flavor = match.group('flavor')
-      full_category = match.group('category')
-      category = [i for i in sv_categories if i in full_category][0]
-      tree = tfile.Get(full_category)
-      for bin in weights[flavor][category]:
-         pt_i, eta_i, _ = bin.xyz
-         pt_cut = '%.0f <= jetPt && jetPt < %.0f' % (bin.x.low, bin.x.high)
-         if pt_i == 0: #x underflow
-            pt_cut = 'jetPt < %.0f' % (bin.x.high)
-         elif pt_i > len(pt_bins):
-            pt_cut = '%.0f <= jetPt' % (bin.x.low)
+total_yield = sum( k for i in qcd_yields.itervalues() for j in i.itervalues() for k in j.itervalues() ) #sum( k for k in j.itervalues() for j in i.itervalues() for i in qcd_yields.itervalues() )
 
-         eta_cut = '%.4f <= TMath::Abs(jetEta) && TMath::Abs(jetEta) < %.4f' % (bin.y.low, bin.y.high)
-         if eta_i == 0: #y underflow
-            eta_cut = 'TMath::Abs(jetEta) <= %.4f' % (bin.y.high)
-         elif eta_i > len(eta_bins):
-            eta_cut = '%.4f <= TMath::Abs(jetEta)' % (bin.y.low)
 
-         nentries = float(tree.GetEntries('%s && %s' % (pt_cut, eta_cut)))
-         bin.value += nentries
-         weights[flavor][category].entries += nentries
+flav_weights = {}
+for flavour in flavours:
+   qcd_flav = sum( k for j in qcd_yields[flavour].itervalues() for k in j.itervalues() )
+   ttj_flav = sum( k for j in ttj_yields[flavour].itervalues() for k in j.itervalues() )
+   flav_weights[flavour] = ttj_flav/qcd_flav
 
-#compute flavor weight 
-if args.flav_w:
-   flavs_entries = {}
-   for flav in flavors:
-      flavs_entries[flav] = sum(weights[flav].values()).GetEffectiveEntries()
-   total = sum(flavs_entries.values())
-   #compute weight: 1./relative population
-   flav_weight = dict((i, total/j) for i, j in flavs_entries.iteritems())
-   #normalize weights to max 1.
-   max_w = max(*flav_weight.values())
-   flav_weight = dict((i, j/max_w) for i, j in flav_weight.iteritems())
-   log.info('writing flavor weight json file')
-   with open('data/%s_flavor_weights.json' % args.sample, 'w') as out:
-      out.write(prettyjson.dumps(flav_weight))
+def ratios_are_ok(one, two):
+   slim1 = [i for i in one if i]
+   slim2 = [i for i in two if i]
+   if not slim1 and not slim2: return True
+   elif len(slim1) != len(slim2): return False
+   r1 = [i/slim1[0] for i in slim1]
+   r2 = [i/slim2[0] for i in slim2]
+   for i, j in zip(r1, r2):
+      if abs(i-j)/i > 10**-6: return False
+   return True
 
-#compute category weight
-category_weights = dict((i, {}) for i in weights)
-for flav, info in weights.iteritems():
-   flavs_entries = sum(info.values()).GetEffectiveEntries()
-   for category, histo in info.iteritems():
-      category_weights[flav][category] = flavs_entries/histo.GetEffectiveEntries()
-with open('data/%s_category_weights.json' % args.sample, 'w') as out:
-   out.write(prettyjson.dumps(category_weights))
+for flavour in flavours:
+   log.info('inspecting flavour: %s' % flavour)
+   for bin in bins:
+      cat_weights = []
+      qcds = []
+      ttjs = []
+      bin_yield  = 0
+      corr_yield = 0
+      for category in categories:
+         qcd = qcd_yields[flavour][category][bin]
+         ttj = ttj_yields[flavour][category][bin]
+         if qcd == 0 and ttj != 0: 
+            log.warning('Category %s, bin %s cannot be reweitghted properly'
+                        ' given that qcd has no events and tt does' % (category, bin))
+         weight = ttj/qcd if qcd else 0.
+         bin_yield += qcd
+         corr_yield += qcd*weight
+         cat_weights.append(weight)
+         qcds.append(qcd)
+         ttjs.append(ttj)
 
-#compute pt-eta weights
-log.info('writing pt-eta weights root file')
-with io.root_open('data/%s_pt_eta_weights.root' % args.sample, 'recreate') as outfile:
-   for flav, items in weights.iteritems():
-      flav_dir = outfile.mkdir(flav)
-      for category, histo in items.iteritems():
-         #entries = histo.GetEntries()
-         for bin in histo:
-            bin.value = 1./bin.value if bin.value else 0.
-         flav_dir.WriteTObject(histo, category)
+      #Make weights such that they do NOT alter the total number of events in the bin
+      if corr_yield == 0 and bin_yield != 0: 
+         log.warning(
+            'Bin %s cannot be reweitghted properly '
+            'given that qcd has no events and tt does' % bin)
+      factor = bin_yield/corr_yield if corr_yield else 0
+      corr_qcds = [i*j*factor for i, j in zip(qcds, cat_weights)]
+      assert(corr_yield == 0 or abs(sum(corr_qcds) - sum(qcds)) < 10**-6)
+      for cat, weight in zip(categories, cat_weights):
+         cat_weight[flavour][cat][bin]  = weight*factor
+         biased_qcd[flavour][cat][bin] *= weight*factor
+      bias_qcds = [biased_qcd[flavour][i][bin] for i in categories]
+      assert(ratios_are_ok(bias_qcds, ttjs))
+
+total_biased_yield = sum( k for i in biased_qcd.itervalues() for j in i.itervalues() for k in j.itervalues() )
+final_qcd  = copy.deepcopy(biased_qcd)
+assert(abs(total_biased_yield - total_yield)/total_biased_yield < 10**-4) #allow minimal variations due to empty tt categories
+
+##FLAV WEIGHTS
+for flavour in flavours:
+   flav_yield = sum( k for j in qcd_yields[flavour].itervalues() for k in j.itervalues() )
+   corr_yield = 0
+   for bin in bins:
+      bin_yield = sum(biased_qcd[flavour][i][bin] for i in categories)
+      for category in categories:
+         bin_weight[flavour][category][bin] = 1./bin_yield if bin_yield else 0
+         final_qcd[flavour][category][bin] *= 1./bin_yield if bin_yield else 0
+         corr_yield += final_qcd[flavour][category][bin]
+   
+   factor = flav_yield/corr_yield
+   for bin in bins:
+      for category in categories:
+         bin_weight[flavour][category][bin] *= factor
+         final_qcd[flavour][category][bin]  *= factor
+
+total_final_yield = sum( k for i in final_qcd.itervalues() for j in i.itervalues() for k in j.itervalues() )
+log.info( "yields: %.1f --> %.1f --> %.1f" % (total_yield, total_biased_yield, total_final_yield))
+
+#debugging helpers
+def bin_yields(yields):
+   ret = []
+   for bin in bins:
+      ret.append(
+         sum(yields[i][bin] for i in categories)
+         )
+   return ret
+
+def cat_yields(yields):
+   ret = []
+   for cat in categories:
+      ret.append(
+         sum(yields[cat][i] for i in bins)
+         )
+   return ret
+
+def is_flat(distro):
+   new = [i for i in distro if i] #zero suppress
+   if len(new) == 1: return True
+   val = new[0]
+   for i in new[1:]:
+      if abs(val - i)/val > 10**-6: return False
+   return True
+
+## many, many checks!
+for flavour in flavours:
+   assert(is_flat(bin_yields(final_qcd[flavour])))
+   for bin in bins:
+      bias_qcds = [final_qcd[flavour][i][bin] for i in categories]
+      ttjs = [ttj_yields[flavour][i][bin] for i in categories]
+      assert(ratios_are_ok(bias_qcds, ttjs))
+
+##
+##  STORE IN H2D and jsons
+##
+
+with open('data/qcd_bin_weights.json', 'w') as out:
+   out.write(
+      prettyjson.dumps(bin_weight)
+      )   
+
+with io.root_open('data/qcd_weights.root', 'w') as out:
+   fweights = ROOT.TObjString(prettyjson.dumps(flav_weights))
+   out.WriteTObject(fweights, 'flavour_weights')
+   for flavor in flavours:
+      fdir = out.mkdir(flavor)
+      for category in categories:
+         cdir = fdir.mkdir(category)
+         h2d_category = Hist2D(binning.pt_bins, binning.eta_bins) #category bias weights
+         h2d_bin      = Hist2D(binning.pt_bins, binning.eta_bins) #pt/eta bin weights        
+         for cat_bin, bin_bin in zip(h2d_category, h2d_bin):
+            cat_cut = binning.cut_from_bin(cat_bin)
+            bin_cut = binning.cut_from_bin(bin_bin)
+            assert(cat_cut == bin_cut)
+            cat_bin.value = cat_weight[flavour][category][cat_cut]
+            bin_bin.value = bin_weight[flavour][category][cat_cut]
+         cdir.WriteTObject(h2d_category, 'bias')
+         cdir.WriteTObject(h2d_bin     , 'kin' )
+         
+         
