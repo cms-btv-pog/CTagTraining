@@ -35,32 +35,30 @@ def processNtuple(infile_name, outfile_name, variables, sample,
     raise ValueError("Could not match the regex to the file %s" % infile_name)
   flavor = match.group('flavor')
   full_category = match.group('category')
-  if pteta_weight:    
-    weight_file = io.root_open('data/%s_pt_eta_weights.root' % sample)
-    flav_dir = weight_file.Get(flavor)
+  weight_tfile = None
+  flav_dir = None
+  tfile_category = ''
+  if pteta_weight or flav_weight or cat_weight:
+    weight_tfile = io.root_open('data/%s_weights.root' % sample)
+    flav_dir = weight_tfile.Get(flavor)
     categories = [i.name for i in flav_dir.keys()]
-    category = [i for i in categories if i in full_category][0]
-    weights = flav_dir.Get(category)
+    #match existing categories to this one, which might be a subset of general category stored in the root file
+    tfile_category = [i for i in categories if i in full_category][0] 
+
+  weights = None
+  if pteta_weight:    
+    weights = flav_dir.Get('%s/kin' % tfile_category)
 
   flavor_weight = 1.
   if flav_weight:
     flavor_weight = prettyjson.loads(
-      open('data/%s_flavor_weights.json' % sample).read()
+      weight_tfile.flavour_weights.String().Data()
       )[flavor]
 
   #put bias weights
-  category_weight = 1.
+  category_weights = None
   if cat_weight:
-    categories_qcd = prettyjson.loads(
-      open('data/qcd_category_weights.json').read()
-      )[flavor]
-    categories_ttj = prettyjson.loads(
-      open('data/ttjets_category_weights.json').read()
-      )[flavor]
-    category = [i for i in categories_qcd.keys() if i in full_category][0]
-    category_weight = categories_qcd[category] / categories_ttj[category] \
-       if sample == 'qcd' else \
-       categories_ttj[category] / categories_qcd[category]
+    category_weights = flav_dir.Get('%s/bias' % tfile_category)
   
   with io.root_open(outfile_name, 'recreate') as outfile:
     outtree = Tree('tree', title='c-tagging training tree')
@@ -105,11 +103,12 @@ def processNtuple(infile_name, outfile_name, variables, sample,
           outtree.flavour_weight = flavor_weight
           total_weight *= flavor_weight
         if cat_weight:
-          outtree.slcategory_weight = category_weight
-          total_weight *= category_weight
+          bin_idx = category_weights.FindFixBin(entry.jetPt, abs(entry.jetEta))          
+          outtree.slcategory_weight = category_weights[bin_idx].value
+          total_weight *= category_weights[bin_idx].value
         if 'total_weight' in branches_def:
           outtree.total_weight = total_weight
-          
+        #set_trace()
         outtree.Fill()
   log.info("processing done [%s]" % tag)
 
@@ -138,6 +137,12 @@ def main(args):
           'var' : varname,
           'idx' : idx
           }
+    else:
+      branches[varname] = {
+        'type' : varinfo['type'].swapcase(), 
+        'default' : varinfo['default'],
+        'var' : varname,
+        }      
                 
   # create Pool
   pool = multiprocessing.Pool(parallelProcesses)
@@ -145,9 +150,11 @@ def main(args):
   
   # run jobs
   nfiles = len(input_files)
+  outfiles = []
   for idx, infile in enumerate(input_files): 
     base_input = os.path.basename(infile)
     outfile = os.path.join(outDirName, 'flat_%s' % base_input)
+    outfiles.append(outfile)
     proc_args = (
       infile, outfile, branches, args.sample,
       args.flav_weight, args.kin_weight, args.cat_weight
@@ -165,7 +172,9 @@ def main(args):
         )
   pool.close()
   pool.join()
-  
+  with open('%s/scripts/data/flat_trees/%s_flat.list' % (os.environ['CTRAIN'], args.sample), 'w') as outfile:
+    outfile.write('\n'.join(outfiles))
+
 
 if __name__ == "__main__":
   parser = ArgumentParser()
