@@ -12,7 +12,7 @@ Run the following commands
 ```
 #create new CMSSW dev area
 areaname=WHATEVER
-scram pro -n $areaname CMSSW CMSSW_7_6_0_pre5 #or cmsrel CMSSW_7_6_0_pre5
+scram pro -n $areaname CMSSW CMSSW_7_6_0_pre7 #or cmsrel CMSSW_7_6_0_pre7
 cd $areaname/src
 cmsenv
 git cms-init
