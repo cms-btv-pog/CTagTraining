@@ -18,13 +18,13 @@ $(DATA)/ttjets_yields.json: $(INPUTS)/ttjets.list $(SCRIPTS)/compute_yields.py
 yields: $(DATA)/qcd_yields.json $(DATA)/ttjets_yields.json
 
 #weight tasks
-$(DATA)/qcd_flavor_weights.json: $(DATA)/qcd_yields.json $(DATA)/ttjets_yields.json $(SCRIPTS)/compute_weights.py
+$(DATA)/qcd_weights.root: $(DATA)/qcd_yields.json $(DATA)/ttjets_yields.json $(SCRIPTS)/compute_weights.py
 	./compute_weights.py
 
-weights: $(DATA)/qcd_flavor_weights.json
+weights: $(DATA)/qcd_weights.root
 
 #flat trees tasks
-$(DATA)/flat_trees/qcd/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py
+$(DATA)/flat_trees/qcd/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py $(DATA)/qcd_weights.root
 	./createNewTree.py qcd --apply-pteta-weight --apply-category-weight --apply-flavor-weight && touch $@
 
 #ttjets do not have weights
