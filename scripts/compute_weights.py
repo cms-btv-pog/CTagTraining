@@ -150,8 +150,8 @@ with open('data/qcd_bin_weights.json', 'w') as out:
 with io.root_open('data/qcd_weights.root', 'w') as out:
    fweights = ROOT.TObjString(prettyjson.dumps(flav_weights))
    out.WriteTObject(fweights, 'flavour_weights')
-   for flavor in flavours:
-      fdir = out.mkdir(flavor)
+   for flavour in flavours:
+      fdir = out.mkdir(flavour)
       for category in categories:
          cdir = fdir.mkdir(category)
          h2d_category = Hist2D(binning.pt_bins, binning.eta_bins) #category bias weights
