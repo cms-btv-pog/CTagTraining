@@ -5,17 +5,34 @@ from pdb import set_trace
 
 graph_path = "ROC_C_light_Inclusive"
 file_names = [
-   ('AllHistograms_RFC_sklearn.root', 'SKLearn training Seth'),
-   ('plots/HopeSethEquivalent/AllHistograms.root', 'SKLearn training Mauro'),
+##  ('SethTrainings/AllHistograms_TMVA.root', 'TMVA'),
+##  ('plots/Categories/ROCs.root', 'SKL categories, 1% 200 trees'),
+##  ('plots/CategoriesEquivalent/AllHistograms.root', 'SKLearn 1% 2000 trees'),
+##  ('plots/CTagEquivalent/AllHistograms.root', 'SKL RFC'),
+##  ('plots/GBC10PcBetter/AllHistograms.root', 'SKL GBC'),
+  ('CvsL_GBC_17Dec/ROCs/7aa4de24d8_ROCs.root', 'SKL GBC Optimized (500 Trees)'),
+  ('CvsL_GBC_17Dec/ROCs/8640356720_ROCs.root', 'SKL GBC Optimized (1000 Trees)'),
+  ('CvsL_GBC_17Dec/ROCs/32c9c99660_ROCs.root', 'SKL GBC Optimized (2000 Trees)'),
+  ('CvsL_GBC_17Dec/ROCs/edce325587_ROCs.root', 'SKL GBC Optimized (3000 Trees)'),
+##  ('plots/GBC_Optimized_Categories/ROCs.root', 'SKL GBC OPT, Categories'),
+##  ('plots/CTagEquivalent/AllHistograms.root', 'SKLearn Mauro, new w, 10% 2000 trees'),
 ]
-output = 'overlay.png'
+output = 'pngs/optimization_ntrees_roc.png'
 
 canvas = plt.Canvas()
 canvas.SetLogy();
 canvas.SetGridx();
 canvas.SetGridy();
 
-legend = plt.Legend(len(file_names))
+max_txt_len = max(len(i) for _, i in file_names)
+legend = plt.Legend(
+   len(file_names), 
+   leftmargin=0.23+(30-max_txt_len)*0.016,
+   rightmargin=0.01, 
+   topmargin=0.6-0.05*(len(file_names)-3), 
+   entrysep=0, 
+   margin=0.1+0.006*(30-max_txt_len)
+)
 
 tfiles = []
 graphs = []
