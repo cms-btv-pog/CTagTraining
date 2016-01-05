@@ -10,7 +10,7 @@ import multiprocessing
 import rootpy.io as io
 from rootpy.tree import Tree
 import prettyjson
-from RecoBTag.CTagging.trainingvars import training_vars
+from trainingvars import training_vars
 from argparse import ArgumentParser
 import rootpy
 from pdb import set_trace

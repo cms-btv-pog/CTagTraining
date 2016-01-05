@@ -3,8 +3,9 @@
 # - flat_tree : makes flat trees, with weights
 
 # Working directory
-BASE=$(CMSSW_BASE)/src
-SCRIPTS=$(BASE)/CTagTraining/scripts
+## BASE=$(CMSSW_BASE)/src
+## SCRIPTS=$(BASE)/CTagTraining/scripts
+SCRIPTS=./
 DATA=$(SCRIPTS)/data
 INPUTS=$(DATA)/inputs
 
@@ -24,11 +25,11 @@ $(DATA)/qcd_weights.root: $(DATA)/qcd_yields.json $(DATA)/ttjets_yields.json $(S
 weights: $(DATA)/qcd_weights.root
 
 #flat trees tasks
-$(DATA)/flat_trees/qcd/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py $(DATA)/qcd_weights.root
-	./createNewTree.py qcd --apply-pteta-weight --apply-category-weight --apply-flavor-weight && touch $@
+$(DATA)/flat_trees/qcd_flat.list: $(SCRIPTS)/createNewTree.py $(DATA)/qcd_weights.root
+	./createNewTree.py qcd --apply-pteta-weight --apply-category-weight --apply-flavor-weight
 
 #ttjets do not have weights
-$(DATA)/flat_trees/ttjets/.flat_trees_timestamp: $(SCRIPTS)/createNewTree.py
-	./createNewTree.py ttjets && touch $@
+$(DATA)/flat_trees/ttjets_flat.list: $(SCRIPTS)/createNewTree.py
+	./createNewTree.py ttjets
 
-trees: $(DATA)/flat_trees/qcd/.flat_trees_timestamp $(DATA)/flat_trees/ttjets/.flat_trees_timestamp
+trees: $(DATA)/flat_trees/qcd_flat.list $(DATA)/flat_trees/ttjets_flat.list

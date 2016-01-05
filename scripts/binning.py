@@ -1,9 +1,15 @@
+#! /bin/env python
+
+'''
+centralized binning definition
+'''
 from pdb import set_trace
 
 pt_bins = [15, 40, 60, 90, 150, 400, 600]
 eta_bins = [1.2, 2.1]
 flavors = ['C', 'B', 'DUSG']
 sv_categories = ["NoVertex", "PseudoVertex", "RecoVertex"]
+lep_categories = ['NoSoftLepton', 'SoftElectron', 'SoftMuon']
 
 def get_cut(ptmin, ptmax, etamin, etamax):
    if ptmin is not None and ptmax is not None:
@@ -46,3 +52,14 @@ def itercuts():
       yield get_cut(ptmin, None, etamin, etamax)
       etamin = etamax
    yield get_cut(ptmin, None, etamin, None)
+
+if __name__ == '__main__':
+   from argparse import ArgumentParser
+   parser = ArgumentParser()
+   parser.add_argument('command', help='what to show')
+   
+   args = parser.parse_args()
+   if args.command == 'categories':
+      for i in sv_categories:
+         for j in lep_categories:
+            print '%s%s' % (i,j)

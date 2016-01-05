@@ -1,7 +1,6 @@
 import sys
-sys.argv.append( '-b-' )
 import os
-from ROOT import *
+import ROOT
 from array import array
 import time
 import multiprocessing
@@ -9,7 +8,7 @@ import thread
 import subprocess
 import math
 
-
+ROOT.gROOT.SetBatch(True)
 
 flavourCutsDict = {}
 flavourCutsDict["B"] = "flavour == 5"
@@ -39,7 +38,6 @@ flavours.append("non-B")
 
 PtBins = []
 PtBins = []
-PtBins.append
 PtBins.append("jetPt > 15")
 PtBins.append("15 < jetPt and jetPt <= 40")
 PtBins.append("40 < jetPt and jetPt <= 60")
@@ -52,7 +50,6 @@ PtBins.append("jetPt > 150")
 
 
 etaPtBins = []
-etaPtBins.append
 etaPtBins.append("15 < jetPt and jetPt <= 40 and abs(jetEta) <= 1.2")
 etaPtBins.append("15 < jetPt and jetPt <= 40 and 1.2 < abs(jetEta) and abs(jetEta) <= 2.1")
 etaPtBins.append("15 < jetPt and jetPt <= 40 and abs(jetEta) > 2.1")
@@ -79,35 +76,35 @@ def processNtuple(inFileName, inDirName, outDirName,):
   
   print "Starting to process %s" %inFileName
   # retrieve the ntuple of interest
-  inFile = TFile( "%s/%s" %(inDirName, inFileName) )
+  inFile = ROOT.TFile( "%s/%s" %(inDirName, inFileName) )
   inTreeName = "tree"
-  mychain = gDirectory.Get( inTreeName )
+  mychain = ROOT.gDirectory.Get( inTreeName )
   
   # output
   outFileName = "%s/%s_Histograms.root" %(outDirName, inFileName.rsplit(".",1)[0])
   print "Writing to %s" %outFileName
-  outFile = TFile( outFileName, 'recreate' )
+  outFile = ROOT.TFile( outFileName, 'recreate' )
 
   discriminantHistos = []
   nBins = 1000
   
   for flav in flavourCutsDict.keys():
-    discriminantHisto = TH1D("histBDTG_%s"%flav, "BDTG output for %s;BDTG value"%flav, nBins, -1, 1)
+    discriminantHisto = ROOT.TH1D("histBDTG_%s"%flav, "BDTG output for %s;BDTG value"%flav, nBins, -1, 1)
     mychain.Draw("BDTG >> +histBDTG_%s"%flav, flavourCutsDict[flav], "")
     discriminantHisto.Write()
     discriminantHistos.append(discriminantHisto)
     for i in range(len(etaPtBins)):
-      discriminantHisto = TH1D("histBDTG_%s_EtaPt%i"%(flav, i), "BDTG output for %s and %s;BDTG value"%(flav, etaPtBins[i]), nBins, -1, 1)
+      discriminantHisto = ROOT.TH1D("histBDTG_%s_EtaPt%i"%(flav, i), "BDTG output for %s and %s;BDTG value"%(flav, etaPtBins[i]), nBins, -1, 1)
       mychain.Draw("BDTG >> +histBDTG_%s_EtaPt%i"%(flav, i), "(%s) && (%s)" %(flavourCutsDict[flav], etaPtBins[i].replace("and","&&")), "")
       discriminantHisto.Write()
       discriminantHistos.append(discriminantHisto)
     for cat in categoryCutsDict.keys():
-      discriminantHisto = TH1D("histBDTG_%s_%s"%(flav, cat), "BDTG output for %s and %s;BDTG value"%(flav, cat), nBins, -1, 1)
+      discriminantHisto = ROOT.TH1D("histBDTG_%s_%s"%(flav, cat), "BDTG output for %s and %s;BDTG value"%(flav, cat), nBins, -1, 1)
       mychain.Draw("BDTG >> +histBDTG_%s_%s"%(flav, cat), "%s && %s"%(flavourCutsDict[flav], categoryCutsDict[cat]), "")
       discriminantHisto.Write()
       discriminantHistos.append(discriminantHisto)
     for j in range(len(PtBins)):
-      discriminantHisto = TH1D("histBDTG_%s_Pt%i"%(flav, j), "BDTG output for %s and %s;BDTG value"%(flav, PtBins[j]), nBins, -1, 1)
+      discriminantHisto = ROOT.TH1D("histBDTG_%s_Pt%i"%(flav, j), "BDTG output for %s and %s;BDTG value"%(flav, PtBins[j]), nBins, -1, 1)
       mychain.Draw("BDTG >> +histBDTG_%s_Pt%i"%(flav, j), "(%s) && (%s)" %(flavourCutsDict[flav], PtBins[j].replace("and","&&")), "")
       discriminantHisto.Write()
       discriminantHistos.append(discriminantHisto)
@@ -126,7 +123,7 @@ def makeROCCurves(outDirName):
     xBins.append(float(i)/nBins)
   outFileName = "%s/AllHistograms.root" %(outDirName)
   print "Updating %s" %outFileName
-  outFile = TFile.Open(outFileName, "update")
+  outFile = ROOT.TFile.Open(outFileName, "update")
   histDictFlav = [[0 for x in range(len(PtBins))] for y in range(len(flavours))]
   histDictFlavEffs = [[0 for x in range(len(PtBins))] for y in range(len(flavours))]
   histDictFlavEffsError = [[0 for x in range(len(PtBins))] for y in range(len(flavours))]
@@ -156,7 +153,7 @@ def makeROCCurves(outDirName):
 
 
   # Create Efficiency v. Discriminator bin plots
-  canvas1 = TCanvas("c0","Eff",800,800)
+  canvas1 = ROOT.TCanvas("c0","Eff",800,800)
   XbinEff = array("d")
   YbinEff = array("d")
   XbinEffError = array("d") # dummy
@@ -174,19 +171,19 @@ def makeROCCurves(outDirName):
 	XbinEffError.append(0) # dummy
         #XbinEff.append(histDictFlavCat[flav][cat].Integral(Xbin,histDictFlavCat[flav][cat].GetNbinsX()+1))
         #XbinEff.append(Xbin)
-      EffCurve = TGraphErrors(len(XbinEff),XbinEff,YbinEff,XbinEffError,YbinEffError)
+      EffCurve = ROOT.TGraphErrors(len(XbinEff),XbinEff,YbinEff,XbinEffError,YbinEffError)
       EffCurve.GetXaxis().SetTitle("%s Discriminant"%(flavours[flav]))
       EffCurve.GetYaxis().SetTitle("%s efficiency"%(flavours[flav]))
       EffCurve.SetTitle("%s efficiency, %s"%(flavours[flav],categories[cat]))
       EffCurve.SetName("Efficiency_%s_discrim_%s"%(flavours[flav],categories[cat]))
       EffCurve.Draw("al")
-      gPad.SetGridx(1)
-      gPad.SetGridy(1)
+      ROOT.gPad.SetGridx(1)
+      ROOT.gPad.SetGridy(1)
       #canvas1.SaveAs("%s/%s.png" %(outDirName, EffCurve.GetName()))
       EffCurve.Write()
 
   # Create ROC curves for vertex categories
-  canvas2 = TCanvas("c2","ROC",800,800);
+  canvas2 = ROOT.TCanvas("c2","ROC",800,800);
   for flav1 in range(len(flavours)):
     for flav2 in range(len(flavours)):
       for cat in range(len(categories)):
@@ -208,7 +205,7 @@ def makeROCCurves(outDirName):
             xBinsPlot.append(xBins[currentBin])
             yBinsPlot.append(yBins[currentBin])
 
-        rocCurve = TGraph(len(xBinsPlot),xBinsPlot,yBinsPlot)
+        rocCurve = ROOT.TGraph(len(xBinsPlot),xBinsPlot,yBinsPlot)
         rocCurve.GetXaxis().SetTitle("%s efficiency"%flavours[flav1])
         rocCurve.GetYaxis().SetTitle("%s efficiency"%flavours[flav2])
         rocCurve.SetTitle("%s vs. %s, %s"%(flavours[flav1], flavours[flav2], categories[cat]))
@@ -216,14 +213,14 @@ def makeROCCurves(outDirName):
         rocCurve.GetYaxis().SetRangeUser(0.0001,1.0);
         rocCurve.GetXaxis().SetLimits(0.,1.0);
         rocCurve.Draw("al")
-        gPad.SetGridx(1)
-        gPad.SetGridy(1)
-        gPad.SetLogy()
+        ROOT.gPad.SetGridx(1)
+        ROOT.gPad.SetGridy(1)
+        ROOT.gPad.SetLogy()
         #canvas2.SaveAs("%s/%s.png" %(outDirName, rocCurve.GetName()))
         rocCurve.Write()
         
   # Create ROC curves
-  canvas = TCanvas("c1","ROC",800,800);
+  canvas = ROOT.TCanvas("c1","ROC",800,800);
   for flav1 in range(len(flavours)):
     for flav2 in range(len(flavours)):
       for n in range(len(PtBins)):
@@ -262,7 +259,7 @@ def makeROCCurves(outDirName):
         #  print "%f %f" %(xBinsPlot[i], yBinsPlot[i])
 
         #rocCurve = TGraph(len(xBins),xBins,yBins)
-        rocCurve = TGraph(len(xBinsPlot),xBinsPlot,yBinsPlot)
+        rocCurve = ROOT.TGraph(len(xBinsPlot),xBinsPlot,yBinsPlot)
         rocCurve.GetXaxis().SetTitle("%s efficiency"%flavours[flav1])
         rocCurve.GetYaxis().SetTitle("%s efficiency"%flavours[flav2])
         rocCurve.SetTitle("%s vs. %s, %s"%(flavours[flav1], flavours[flav2], PtBins[n]))
@@ -271,9 +268,9 @@ def makeROCCurves(outDirName):
         rocCurve.GetXaxis().SetLimits(0.,1.0);
         #TH1D("ROC_%s_%s"%(flav1, flav2), "ROC curve for %s vs. %s;%s efficiency;%s efficiency"%(flav1, flav2, flav1, flav2), 100, -1, 1)
         rocCurve.Draw("al")
-        gPad.SetGridx(1)
-        gPad.SetGridy(1)
-        gPad.SetLogy()
+        ROOT.gPad.SetGridx(1)
+        ROOT.gPad.SetGridy(1)
+        ROOT.gPad.SetLogy()
         #canvas.SaveAs("%s/%s.png" %(outDirName, rocCurve.GetName()))
         rocCurve.Write()
       #break
@@ -282,6 +279,12 @@ def makeROCCurves(outDirName):
 
 
 def main():
+  from argparse import ArgumentParser
+
+  parser = ArgumentParser()
+  parser.add_argument('inputdir')
+  parser.add_argument('outputdir')
+  args = parser.parse_args()
 
   ROOT.gROOT.SetBatch(True)
   parallelProcesses = multiprocessing.cpu_count()
@@ -291,8 +294,12 @@ def main():
   print "Using %i parallel processes" %parallelProcesses
     
   #outDirName = './histos_witherror'
-  outDirName = './histos'
-  inDirName = "./"
+  outDirName = args.outputdir
+  inDirName = args.inputdir
+
+  if not os.path.isdir(outDirName):
+    os.makedirs(outDirName)
+  
   fileList = []
 
   for inFileName in os.listdir(inDirName):
