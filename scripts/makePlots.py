@@ -38,7 +38,6 @@ flavours.append("non-B")
 
 PtBins = []
 PtBins = []
-PtBins.append
 PtBins.append("jetPt > 15")
 PtBins.append("15 < jetPt and jetPt <= 40")
 PtBins.append("40 < jetPt and jetPt <= 60")
@@ -51,7 +50,6 @@ PtBins.append("jetPt > 150")
 
 
 etaPtBins = []
-etaPtBins.append
 etaPtBins.append("15 < jetPt and jetPt <= 40 and abs(jetEta) <= 1.2")
 etaPtBins.append("15 < jetPt and jetPt <= 40 and 1.2 < abs(jetEta) and abs(jetEta) <= 2.1")
 etaPtBins.append("15 < jetPt and jetPt <= 40 and abs(jetEta) > 2.1")
