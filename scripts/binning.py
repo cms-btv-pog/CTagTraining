@@ -1,4 +1,8 @@
 #! /bin/env python
+
+'''
+centralized binning definition
+'''
 from pdb import set_trace
 
 pt_bins = [15, 40, 60, 90, 150, 400, 600]

@@ -1,3 +1,9 @@
+#! /bin/env python
+
+'''
+returns the most efficient ROC out of the ones in the root files provided
+'''
+
 from rootpy.io import root_open
 import rootpy.plotting as plt
 from argparse import ArgumentParser

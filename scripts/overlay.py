@@ -1,3 +1,6 @@
+'''
+simple overlay script for ROCs, should add var parsing. inputfiles and attached legend entry are defined in the file_names variable
+'''
 from rootpy.io import root_open
 import rootpy.plotting as plt
 from argparse import ArgumentParser

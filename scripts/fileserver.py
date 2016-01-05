@@ -1,3 +1,8 @@
+'''
+Workaround to allow xrd access to root files, given that the ROOT version shipped with anaconda does not 
+provide the functionality. Files are transferred on demand and deleted when not needed any longer.
+'''
+
 import subprocess
 import os
 import uuid

@@ -1,3 +1,10 @@
+#! /bin/env python
+
+'''
+makes ROC graphs from the output of the MVA testing step. It can optionally optimize the cut on the discriminator output
+between different categories in case the MVA has been trained separately for them
+'''
+
 from rootpy.io import root_open
 import rootpy.plotting as plt
 from argparse import ArgumentParser

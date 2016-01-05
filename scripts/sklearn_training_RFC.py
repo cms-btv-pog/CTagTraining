@@ -1,4 +1,9 @@
 #! /bin/env python
+
+'''
+Main training script for tree-related classifiers (non NN)
+'''
+
 import rootpy.io as io
 import rootpy
 from ROOT import TH1D, TObjString

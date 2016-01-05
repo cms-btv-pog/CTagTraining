@@ -1,5 +1,10 @@
 #! /bin/env bash
 
+#
+# Gets the output of an optimization cycle (condor only, for the moment) and creates all the ROC
+# plots in a sub-directory called ROCs
+#
+
 indir=$1
 mkdir -p $indir/ROCs
 cfgs=`grep Arguments $indir/condor.jdl | awk '{print $3}'`

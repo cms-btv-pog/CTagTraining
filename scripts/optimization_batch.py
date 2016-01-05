@@ -1,4 +1,9 @@
 #! /bin/env python
+
+'''
+creates a batch task configuration that submits multiple training configurations, configure by modifying options_to_scan variable 
+'''
+
 import os
 import itertools
 from argparse import ArgumentParser

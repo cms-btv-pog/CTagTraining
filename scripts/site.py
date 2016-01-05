@@ -1,3 +1,7 @@
+'''
+site handling. To confgure the scripts to be run on multiple sites (xrd, batch systems etc..)
+'''
+
 import os
 import subprocess
 
