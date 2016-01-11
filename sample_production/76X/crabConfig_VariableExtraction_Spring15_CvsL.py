@@ -33,6 +33,10 @@ config.General.workArea = 'crab_projects_trial2TTJets_CvsL'
 config.General.transferLogs=True
 
 config.section_("JobType")
+
+#cfg Command Line parameters
+#config.JobType.pyCfgParams = ['isTTBar=True']
+
 config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = 'varextractor_ctag_CvsL_cfg.py'
 #config.JobType.inputFiles = 'MVAJetTags.db'
