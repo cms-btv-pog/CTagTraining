@@ -14,7 +14,7 @@ options.parseArguments()
 process = cms.Process("CSVTrainer")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 1
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 
 process.load("RecoBTau.JetTagComputer.jetTagRecord_cfi")
 
@@ -94,7 +94,7 @@ process.selectedHadronsAndPartons = selectedHadronsAndPartons.clone()
 from PhysicsTools.JetMCAlgos.AK4PFJetsMCFlavourInfos_cfi import ak4JetFlavourInfos
 process.jetFlavourInfosAK4PFJets = ak4JetFlavourInfos.clone()
 process.jetFlavourInfosAK4PFJets.jets = cms.InputTag("pfJetsPFBRECO", '', 'CSVTrainer')
-
+process.jetFlavourInfosAK4PFJets.hadronFlavourHasPriority = True
 
 process.source = cms.Source(
    "PoolSource",
