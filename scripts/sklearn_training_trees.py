@@ -213,7 +213,10 @@ log.info('training completed --> Elapsed time: %.1f minutes' % ((end-start)/60))
 
 if args.out:
    log.info('Dumping training file in: ' + args.out)
-   joblib.dump(clf, args.out, compress=True) 
+   # *** Sklearn(python)-type training file (.pkl) ***
+   joblib.dump(clf, args.out, compress=True)
+   # *** TMVA-style training file (.xml) ***
+   #convert.gbr_to_tmva(clf,X,TMVAClassification_BDTG.weights.xml,mva_name = "BDTG",coef = 10, var_names = variables)
 
 #################################
 #				#
@@ -259,6 +262,7 @@ for fname in input_files:
    X_val = rootnp.root2array(extfile.path,'tree',variables,None,0,nfiles_per_sample,args.testEvery,False,'weight')
    X_val = rootnp.rec2array(X_val)
    BDTG =  clf_val.predict_proba(X_val)[:,1]
+   #BDTG = [i*2-1 for i in BDTG] # turn this on when you want to smear the output discriminator over [-1,+1] instead of [0,1]
    
    Output_variables = ['flavour','vertexCategory','jetPt','jetEta']
    Output_tree = rootnp.root2array(extfile.path,'tree',Output_variables,None,0,nfiles_per_sample,args.testEvery,False,'weight')
