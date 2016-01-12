@@ -172,5 +172,5 @@ def evaluate_sklearn(cls, vals, coef=10):
         r = t.tree_.predict(np.array(vals, dtype="float32")) / cls.n_estimators * coef
         #print r
         ret += r[0,0]
-    print 2.0/(1.0+np.exp(-2.0*ret))-1
+    #print 2.0/(1.0+np.exp(-2.0*ret))-1
     return 2.0/(1.0+np.exp(-2.0*ret))-1
