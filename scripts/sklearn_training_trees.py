@@ -44,6 +44,7 @@ parser.add_argument('--bkg', default='DUSG', help='background for training')
 parser.add_argument('--algo', default='RFC', help='options RFC (Random Forest) or GBC (Gradient boost)')
 parser.add_argument('--batch', action='store_true', help='batch mode')
 parser.add_argument('--category', default='*', help='category to be used for training/testing (POSIX regex)')
+parser.add_argument('--TMVAOut', action='store_true', help='return output in TMVA Style (BDT output in [-1,1] range')
 
 #parser.add_argument('--apply-pteta-weight',  dest='kin_weight', action='store_true', help='applies pt-eta weight')
 args = parser.parse_args()
@@ -213,10 +214,11 @@ log.info('training completed --> Elapsed time: %.1f minutes' % ((end-start)/60))
 
 if args.out:
    log.info('Dumping training file in: ' + args.out)
-   # *** Sklearn(python)-type training file (.pkl) ***
-   joblib.dump(clf, args.out, compress=True)
-   # *** TMVA-style training file (.xml) ***
-   #convert.gbr_to_tmva(clf,X,TMVAClassification_BDTG.weights.xml,mva_name = "BDTG",coef = 10, var_names = variables)
+   out_ext = (args.out).split('.')[-1]
+   if (out_ext == 'xml'):
+   	convert.gbr_to_tmva(clf,X,args.out,mva_name = "BDTG",coef = 10, var_names = variables)
+   else:
+   	joblib.dump(clf, args.out, compress=True)
 
 #################################
 #				#
@@ -262,8 +264,9 @@ for fname in input_files:
    X_val = rootnp.root2array(extfile.path,'tree',variables,None,0,nfiles_per_sample,args.testEvery,False,'weight')
    X_val = rootnp.rec2array(X_val)
    BDTG =  clf_val.predict_proba(X_val)[:,1]
-   #BDTG = [i*2-1 for i in BDTG] # turn this on when you want to smear the output discriminator over [-1,+1] instead of [0,1]
-   
+   if (args.TMVAOut):
+   	BDTG = [i*2-1 for i in BDTG]
+   	
    Output_variables = ['flavour','vertexCategory','jetPt','jetEta']
    Output_tree = rootnp.root2array(extfile.path,'tree',Output_variables,None,0,nfiles_per_sample,args.testEvery,False,'weight')
    Output_tree = rootnp.rec2array(Output_tree)
