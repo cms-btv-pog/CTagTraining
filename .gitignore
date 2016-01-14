@@ -9,3 +9,4 @@ external/vpython
 *.o
 *.tar
 external/src
+*.txt

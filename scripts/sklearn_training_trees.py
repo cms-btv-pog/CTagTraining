@@ -25,7 +25,9 @@ from copy import deepcopy
 import prettyjson
 import fileserver
 from fnmatch import fnmatch
-import site
+import localsettings as site
+import pickle
+import features
 
 parser = ArgumentParser()
 parser.add_argument('trainingTag', help='Tag to be used')
@@ -58,84 +60,9 @@ codemark = TObjString(
    codeset
 )
 
-#################################
-#				#
-# 	Training		#
-#				#
-#################################
-
-variables = [
-  #"flavour",
-  #"vertexCategory",
-  #"vertexLeptonCategory",
-  #"jetPt",
-  #"trackJetPt",
-  #"jetEta",
-  "trackSip2dSig_0", "trackSip2dSig_1",#"trackSip2dSig_2",
-  "trackSip3dSig_0", "trackSip3dSig_1",#"trackSip3dSig_2",
-  #"trackSip2dVal_0", "trackSip2dVal_1", "trackSip2dVal_2",
-  #"trackSip3dVal_0", "trackSip3dVal_1", "trackSip3dVal_2",
-  "trackPtRel_0", "trackPtRel_1",# "trackPtRel_2",
-  "trackPPar_0", "trackPPar_1",# "trackPPar_2",
-  "trackEtaRel_0","trackEtaRel_1",# "trackEtaRel_2",
-  "trackDeltaR_0", "trackDeltaR_1",# "trackDeltaR_2",
-  "trackPtRatio_0", "trackPtRatio_1",# "trackPtRatio_2",
-  "trackPParRatio_0", "trackPParRatio_1",# "trackPParRatio_2",
-  "trackJetDist_0","trackJetDist_1",# "trackJetDist_2",
-  "trackDecayLenVal_0", "trackDecayLenVal_1",# "trackDecayLenVal_2",
-  "vertexMass_0",
-  "vertexEnergyRatio_0",
-  "trackSip2dSigAboveCharm_0",
-  "trackSip3dSigAboveCharm_0",
-  "flightDistance2dSig_0",
-  "flightDistance3dSig_0",
-  #"flightDistance2dVal_0",
-  #"flightDistance3dVal_0",
-  "trackSumJetEtRatio",
-  "vertexJetDeltaR_0",
-  "trackSumJetDeltaR",
-  #"trackSip2dValAboveCharm_0",
-  #"trackSip3dValAboveCharm_0",
-  #"vertexFitProb_0",
-  #"chargedHadronEnergyFraction",
-  #"neutralHadronEnergyFraction",
-  #"photonEnergyFraction",
-  #"electronEnergyFraction",
-  #"muonEnergyFraction",
-  "massVertexEnergyFraction_0",
-  "vertexBoostOverSqrtJetPt_0",
-  "leptonPtRel_0","leptonPtRel_1",#"leptonPtRel_2",
-  "leptonSip3d_0","leptonSip3d_1",#"leptonSip3d_2",
-  "leptonDeltaR_0","leptonDeltaR_1",#"leptonDeltaR_2",
-  "leptonRatioRel_0","leptonRatioRel_1",#"leptonRatioRel_2",
-  "leptonEtaRel_0","leptonEtaRel_1",#"leptonEtaRel_2",
-  "leptonRatio_0","leptonRatio_1",#"leptonRatio_2",
-  "vertexNTracks_0",
-  "jetNSecondaryVertices",
-  "jetNTracks",
-  ]
-###   variables = [
-###   	'trackSip2dSig_0',
-###   	'trackSip2dSig_1',
-###   	'trackSip3dSig_0',
-###   	'trackSip3dSig_1',
-###   	'trackPtRel_0',
-###   	'trackPtRel_1',
-###   	'trackPPar_0',
-###   	'trackPPar_1',
-###   	'trackPtRatio_0',
-###   	'trackJetDist_0',
-###   	'trackDecayLenVal_0',
-###   	'vertexEnergyRatio_0',
-###   	'trackSip2dSigAboveCharm_0',
-###   	'trackSip3dSigAboveCharm_0',
-###   	'flightDistance2dSig_0',
-###   	'flightDistance3dSig_0',
-###   	'trackSumJetEtRatio',
-###   	'trackSumJetDeltaR',
-###   	'massVertexEnergyFraction_0',
-###   	'leptonRatioRel_0',
-###   ]
+#
+#   TRAINING
+#
 
 scripts_dir = os.path.join(os.environ['CTRAIN'], 'scripts')
 fname_regex = re.compile('[a-zA-Z_0-9]+_(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
@@ -143,6 +70,28 @@ qcd_txt_path= os.path.join(scripts_dir, 'data/flat_trees/qcd_flat.list')
 input_files = [i.strip() for i in open(qcd_txt_path)]
 if args.category != '*':
    input_files = [i for i in input_files if fnmatch(os.path.basename(i), args.category)]
+   variables = features.general
+   #add vtx vars
+   if 'RecoVertex' in args.category:
+      log.info('adding SV input variables')
+      variables.extend(features.vertex)
+   elif 'NoVertex' in args.category or 'PseudoVertex' in args.category:
+      log.info('skipping SV input variables')
+   else:
+      log.info('Category selection does not specify SV type, adding SV input variables for safety')
+      variables.extend(features.vertex)
+   #add lep vars
+   if 'SoftElectron' in args.category or 'SoftMuon' in args.category:
+      log.info('adding SL input variables')
+      variables.extend(features.leptons)
+   elif 'NoSoftLepton' in args.category:
+      log.info('skipping SL input variables')
+   else:
+      log.info('Category selection does not specify SL type, adding SL input variables for safety')
+      variables.extend(features.leptons)
+else:
+   log.info('No category selection, using all the input variables')
+   variables=features.general+features.vertex+features.leptons
 if args.batch:
    #use xrootd to fetch file in batch mode
    input_files = [ site.local_2_xrd(i) for i in input_files]
@@ -245,6 +194,12 @@ if args.batch:
 dirpath = 'tested_files/%s' % args.trainingTag if not args.batch else ''
 if not os.path.isdir(dirpath) and not args.batch:
    os.makedirs(dirpath)
+
+var_ranking = zip(variables,clf.feature_importances_)
+var_ranking.sort(lambda x: x[1], reverse=True)
+picklename = '%sranking.p' % (args.trainingTag if args.batch else '')
+picklename = os.path.join(dirpath picklename)
+pickle.dump( var_ranking, open( picklename, "wb" ) )
 
 pool_files = []
 for fname in input_files:
