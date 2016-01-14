@@ -6,21 +6,29 @@ import rootpy.plotting as plt
 from argparse import ArgumentParser
 from pdb import set_trace
 
-graph_path = "ROC_C_light_Inclusive"
+graph_path = "ROC_C_B_Inclusive"
 file_names = [
+#
+# CvsL
+#
+
 ##  ('SethTrainings/AllHistograms_TMVA.root', 'TMVA'),
 ##  ('plots/Categories/ROCs.root', 'SKL categories, 1% 200 trees'),
 ##  ('plots/CategoriesEquivalent/AllHistograms.root', 'SKLearn 1% 2000 trees'),
 ##  ('plots/CTagEquivalent/AllHistograms.root', 'SKL RFC'),
-##  ('plots/GBC10PcBetter/AllHistograms.root', 'SKL GBC'),
-  ('CvsL_GBC_17Dec/ROCs/7aa4de24d8_ROCs.root', 'SKL GBC Optimized (500 Trees)'),
-  ('CvsL_GBC_17Dec/ROCs/8640356720_ROCs.root', 'SKL GBC Optimized (1000 Trees)'),
-  ('CvsL_GBC_17Dec/ROCs/32c9c99660_ROCs.root', 'SKL GBC Optimized (2000 Trees)'),
-  ('CvsL_GBC_17Dec/ROCs/edce325587_ROCs.root', 'SKL GBC Optimized (3000 Trees)'),
-##  ('plots/GBC_Optimized_Categories/ROCs.root', 'SKL GBC OPT, Categories'),
+##   ('plots/GBC10PcBetter/AllHistograms.root', 'SKL GBC'),
+##   ('CvsL_GBC_17Dec/ROCs/7aa4de24d8_ROCs.root', 'SKL GBC Optimized (500 Trees)'),
+##   ('tested_files/Optimized_Categories/ROCs.root', 'SKL GBC OPT, Categories'),
 ##  ('plots/CTagEquivalent/AllHistograms.root', 'SKLearn Mauro, new w, 10% 2000 trees'),
+
+#
+# CvsB
+#
+  ('tested_files/AllHistograms_TMVA_BDT_CvsB.root', 'TMVA'),
+  ('tested_files/AllHistograms_sklearn_GBC_CvsB.root', 'SKLearn'),
+  ('CvsB_GBC_05Jan/ROCs/09d4507809_ROCs.root', 'SKLearn, Optimized'),
 ]
-output = 'pngs/optimization_ntrees_roc.png'
+output = 'pngs/optimization_CvsB.png'
 
 canvas = plt.Canvas()
 canvas.SetLogy();
