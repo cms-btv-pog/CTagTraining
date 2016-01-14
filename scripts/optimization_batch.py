@@ -9,7 +9,7 @@ import itertools
 from argparse import ArgumentParser
 from pdb import set_trace
 import hashlib
-import site
+import localsettings as site
 
 parser = ArgumentParser()
 parser.add_argument('batchdir', help='where to dump batch jobs info')
@@ -19,22 +19,22 @@ if not os.path.isdir(args.batchdir):
    os.makedirs(args.batchdir)
 
 options_to_scan = [
-##   ('pickEvery',[10]),
-##   ('testEvery',[10]),
-##   ('ntrees',[500, 1000, 2000, 3000]),
-##   ('relativeSplit',[0.002, 0.004, 0.006, 0.008]),
-##   ('maxDepth',[-1, 5, 8, 10, 15]),
-##   ('algo',['GBC']),
-##   ('learningRate',[0.05, 0.1, 0.2, 0.3, 0.4, 0.8]),
   ('pickEvery',[10]),
   ('testEvery',[10]),
-  ('ntrees',[500]),
-  ('relativeSplit',[0.006]),
-  ('maxDepth',[15]),
+  ('ntrees',[500, 1000, 2000, 3000]),
+  ('relativeSplit',[0.002, 0.004, 0.006, 0.008]),
+  ('maxDepth',[-1, 5, 8, 10, 15]),
   ('algo',['GBC']),
-  ('learningRate',[0.05]),
-  ('category', ['*NoVertexNoSoftLepton*','*NoVertexSoftElectron*','*NoVertexSoftMuon*','*PseudoVertexNoSoftLepton*','*PseudoVertexSoftElectron*','*PseudoVertexSoftMuon*','*RecoVertexNoSoftLepton*','*RecoVertexSoftElectron*','*RecoVertexSoftMuon*']),
-#   ('bkg',['B']),
+  ('learningRate',[0.05, 0.1, 0.2, 0.3, 0.4, 0.8]),
+  ('bkg',['B']),
+##   ('pickEvery',[10]),
+##   ('testEvery',[10]),
+##   ('ntrees',[500]),
+##   ('relativeSplit',[0.006]),
+##   ('maxDepth',[15]),
+##   ('algo',['GBC']),
+##   ('learningRate',[0.05]),
+##   ('category', ['*NoVertexNoSoftLepton*','*NoVertexSoftElectron*','*NoVertexSoftMuon*','*PseudoVertexNoSoftLepton*','*PseudoVertexSoftElectron*','*PseudoVertexSoftMuon*','*RecoVertexNoSoftLepton*','*RecoVertexSoftElectron*','*RecoVertexSoftMuon*']),
 #   ('',),
 #   ('',),
 ]
