@@ -48,24 +48,40 @@ def is_better(this, other):
          below +=1
    return below > above
 
-best_file = None
-best_roc = None
+## best_file = None
+## best_roc = None
+wpoints = [(float('inf'), None) for _ in range(5, 95)]
 
-worst_file = None
-worst_roc = None
+## worst_file = None
+## worst_roc = None
 
 #infiles = ['CvsL_GBC_17Dec/ROCs/bf129208a8_ROCs.root', 'CvsL_GBC_17Dec/ROCs/7aa4de24d8_ROCs.root']#args.inputfiles
 for infile in args.inputfiles:
-   log.debug('inspecting %s' % infile)
+   #log.debug('inspecting %s' % infile)
    tfile = root_open(infile)
    roc = tfile.Get(args.rocname)
-   if best_roc is None or is_better(roc, best_roc):
-      log.debug('new best! %s' % infile)
-      best_roc = roc
-      best_file = tfile
-   if worst_roc is None or not is_better(roc, worst_roc):
-      worst_roc = roc
-      worst_file = tfile
+   for idx, i in enumerate(range(5, 95)):
+      xpoint = i/100.
+      val = roc.Eval(xpoint)
+      if val < wpoints[idx][0]:
+         wpoints[idx] = (val, infile)
+   ## if best_roc is None or is_better(roc, best_roc):
+   ##    log.debug('new best! %s' % infile)
+   ##    best_roc = roc
+   ##    best_file = tfile
+   ## if worst_roc is None or not is_better(roc, worst_roc):
+   ##    worst_roc = roc
+   ##    worst_file = tfile
 
-print ' -->  BEST:', best_file.name
-print ' --> WORST:', worst_file.name
+ranks = {}
+for _, v in wpoints:
+   if v not in ranks:
+      ranks[v]=0
+   ranks[v]+=1
+ranks = ranks.items()
+ranks.sort(key=lambda x: x[1], reverse=True)
+
+print "Ranks: "
+for i, info in enumerate(ranks):
+   print ' -->', i, ')', info[0]
+#print ' --> WORST:', worst_file.name
