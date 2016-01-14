@@ -7,11 +7,11 @@ from pdb import set_trace
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument('in',  help='input root file')
+parser.add_argument('input',  help='input root file')
 parser.add_argument('out', help='output dir')
 args = parser.parse_args()
       
-tfile = root_open(args.in)
+tfile = root_open(args.input)
 plotter = BasePlotter(
    args.out,
    defaults={'save':{'pdf' : False}},

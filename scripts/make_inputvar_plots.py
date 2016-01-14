@@ -10,11 +10,11 @@ from pdb import set_trace
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
-parser.add_argument('in',  help='input txt with files (non-flat trees)')
+parser.add_argument('input',  help='input txt with files (non-flat trees)')
 parser.add_argument('out', help='output root file')
 args = parser.parse_args()
 
-inputs = args.in
+inputs = args.input
 dirpath = os.path.dirname(args.out)
 if not os.path.isdir(dirpath):
    os.makedirs(dirpath)
