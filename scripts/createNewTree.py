@@ -83,14 +83,24 @@ def processNtuple(infile_name, outfile_name, variables, sample,
           log.debug("processing entry: %i" % e_idx)
         for name, info in variables.iteritems():
           value = info['default']
-          if hasattr(entry, info['var']):
-            var = getattr(entry, info['var'])
-            vtype = type_dict[info['type'].lower()]
-            if 'idx' in info:
-              if var.size() > info['idx']:
-                value = vtype(var[info['idx']])
-            else:
-              value = vtype(var)
+          try:
+            if 'var' in info and hasattr(entry, info['var']):
+              var = getattr(entry, info['var'])
+              vtype = type_dict[info['type'].lower()]
+              if 'idx' in info:
+                if var.size() > info['idx']:
+                  value = vtype(var[info['idx']])
+              else:
+                value = vtype(var)
+            elif 'fcn' in info:
+              vtype = type_dict[info['type'].lower()]
+              value = vtype(info['fcn'](entry))
+          except:
+            set_trace() 
+          # else:
+          #   set_trace()
+          #   raise RuntimeError("something went wrong processing variable %s" % name)
+            
           #if value is nan, then set to default (maybe better if you skip the whole jet)
           value = info['default'] if math.isnan(value) else value
           setattr(outtree, name, value)
@@ -143,7 +153,35 @@ def main(args):
         'default' : varinfo['default'],
         'var' : varname,
         }      
-                
+
+  #
+  # Add sum branches
+  #
+  branches['sumRelConcentricEnergyAroundJetAxis_0'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:2]), 
+    'type': 'F'
+    }
+  branches['sumRelConcentricEnergyAroundJetAxis_1'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:3]), 
+    'type': 'F'
+    }
+  branches['sumRelConcentricEnergyAroundJetAxis_2'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:4]), 
+    'type': 'F'
+    }
+  branches['sumRelConcentricEnergyAroundJetAxis_3'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:5]), 
+    'type': 'F'
+    }
+  branches['sumRelConcentricEnergyAroundJetAxis_4'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:6]), 
+    'type': 'F'
+    }
+  branches['sumRelConcentricEnergyAroundJetAxis_5'] = {
+    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:7]), 
+    'type': 'F'
+    }
+
   # create Pool
   pool = multiprocessing.Pool(parallelProcesses)
   print "Using %i parallel processes" % parallelProcesses
