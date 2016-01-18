@@ -97,4 +97,4 @@ pool.join()
 print "processing done"
 os.system('hadd -O -f %s %s' % (args.out, ' '.join(partials)))
 os.system('rm %s' % ' '.join(partials))
-
+print "DONE!"
