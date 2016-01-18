@@ -196,9 +196,9 @@ if not os.path.isdir(dirpath) and not args.batch:
    os.makedirs(dirpath)
 
 var_ranking = zip(variables,clf.feature_importances_)
-var_ranking.sort(lambda x: x[1], reverse=True)
+var_ranking.sort(key=lambda x: x[1], reverse=True)
 picklename = '%sranking.p' % (args.trainingTag if args.batch else '')
-picklename = os.path.join(dirpath picklename)
+picklename = os.path.join(dirpath, picklename)
 pickle.dump( var_ranking, open( picklename, "wb" ) )
 
 pool_files = []
