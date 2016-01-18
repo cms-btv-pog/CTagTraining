@@ -5,7 +5,7 @@ central place to list the features to be used in training
 general = [
   #"flavour",
   #"vertexCategory",
-  #"vertexLeptonCategory",
+  "vertexLeptonCategory",
   #"jetPt",
   #"trackJetPt",
   #"jetEta",
@@ -25,6 +25,23 @@ general = [
   "jetNTracks",
   "trackSumJetEtRatio",
   "trackSumJetDeltaR",
+
+  ##NEW ONES
+  'jetPtD_0',
+  'sumRelConcentricEnergyAroundJetAxis_5',
+  'sumRelConcentricEnergyAroundJetAxis_4',
+  'sumRelConcentricEnergyAroundJetAxis_1',
+  'sumRelConcentricEnergyAroundJetAxis_0',
+  'sumRelConcentricEnergyAroundJetAxis_3',
+  'sumRelConcentricEnergyAroundJetAxis_2',
+  'relConcentricEnergyAroundJetAxis_3',
+  'relConcentricEnergyAroundJetAxis_2',
+  'relConcentricEnergyAroundJetAxis_1',
+  'relConcentricEnergyAroundJetAxis_7',
+  'relConcentricEnergyAroundJetAxis_6',
+  'relConcentricEnergyAroundJetAxis_5',
+  'relConcentricEnergyAroundJetAxis_4',
+  'relConcentricEnergyAroundJetAxis_0',
 ]
 
 vertex = [
