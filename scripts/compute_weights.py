@@ -83,7 +83,7 @@ for flavour in flavours:
 
 total_biased_yield = sum( k for i in biased_qcd.itervalues() for j in i.itervalues() for k in j.itervalues() )
 final_qcd  = copy.deepcopy(biased_qcd)
-assert(abs(total_biased_yield - total_yield)/total_biased_yield < 10**-4) #allow minimal variations due to empty tt categories
+assert(abs(total_biased_yield - total_yield)/total_biased_yield < 5*10**-3) #allow minimal variations due to empty tt categories
 
 ##FLAV WEIGHTS
 for flavour in flavours:
