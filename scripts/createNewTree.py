@@ -94,7 +94,8 @@ def processNtuple(infile_name, outfile_name, variables, sample,
                 value = vtype(var)
             elif 'fcn' in info:
               vtype = type_dict[info['type'].lower()]
-              value = vtype(info['fcn'](entry))
+              fcn = globals()[info['fcn']]
+              value = vtype(fcn(entry, *info['args']))
           except:
             set_trace() 
           # else:
@@ -121,6 +122,9 @@ def processNtuple(infile_name, outfile_name, variables, sample,
         #set_trace()
         outtree.Fill()
   log.info("processing done [%s]" % tag)
+
+def sum_rings(entry, idx):
+  return sum(entry.relConcentricEnergyAroundJetAxis[:idx])
 
 def main(args):
   parallelProcesses = multiprocessing.cpu_count()
@@ -158,27 +162,27 @@ def main(args):
   # Add sum branches
   #
   branches['sumRelConcentricEnergyAroundJetAxis_0'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:2]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (2,),
     'type': 'F'
     }
   branches['sumRelConcentricEnergyAroundJetAxis_1'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:3]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (3,),
     'type': 'F'
     }
   branches['sumRelConcentricEnergyAroundJetAxis_2'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:4]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (4,),
     'type': 'F'
     }
   branches['sumRelConcentricEnergyAroundJetAxis_3'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:5]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (5,),
     'type': 'F'
     }
   branches['sumRelConcentricEnergyAroundJetAxis_4'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:6]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (6,),
     'type': 'F'
     }
   branches['sumRelConcentricEnergyAroundJetAxis_5'] = {
-    'default': -10, 'fcn': lambda x: sum(x.relConcentricEnergyAroundJetAxis[:7]), 
+    'default': -10, 'fcn': 'sum_rings', 'args' : (7,),
     'type': 'F'
     }
 
@@ -210,6 +214,7 @@ def main(args):
         )
   pool.close()
   pool.join()
+  print "DONE!"
   with open('%s/scripts/data/flat_trees/%s_flat.list' % (os.environ['CTRAIN'], args.sample), 'w') as outfile:
     outfile.write('\n'.join(outfiles))
 
