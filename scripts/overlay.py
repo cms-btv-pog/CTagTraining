@@ -5,32 +5,48 @@ from rootpy.io import root_open
 import rootpy.plotting as plt
 from argparse import ArgumentParser
 from pdb import set_trace
+import prettyjson
+import ROOT
+ROOT.gROOT.SetBatch(True)
+ROOT.gStyle.SetOptTitle(0)
 
-graph_path = "ROC_C_B_Inclusive"
+parser = ArgumentParser()
+parser.add_argument('input', nargs='*', help='input json config')
+args = parser.parse_args()
+
+graph_path = "ROC_C_light_Inclusive"
 file_names = [
 #
 # CvsL
 #
-
-##  ('SethTrainings/AllHistograms_TMVA.root', 'TMVA'),
-##  ('plots/Categories/ROCs.root', 'SKL categories, 1% 200 trees'),
-##  ('plots/CategoriesEquivalent/AllHistograms.root', 'SKLearn 1% 2000 trees'),
-##  ('plots/CTagEquivalent/AllHistograms.root', 'SKL RFC'),
-##   ('plots/GBC10PcBetter/AllHistograms.root', 'SKL GBC'),
-##   ('CvsL_GBC_17Dec/ROCs/7aa4de24d8_ROCs.root', 'SKL GBC Optimized (500 Trees)'),
-##   ('tested_files/Optimized_Categories/ROCs.root', 'SKL GBC OPT, Categories'),
-##  ('plots/CTagEquivalent/AllHistograms.root', 'SKLearn Mauro, new w, 10% 2000 trees'),
-
+   ('CvsL_76_17Jan/ROCs/5565121efc_ROCs.root', '7.6 Optimization'),
+   ('test/ROCs.root', 'separate testing'),
 #
 # CvsB
 #
-  ('tested_files/AllHistograms_TMVA_BDT_CvsB.root', 'TMVA'),
-  ('tested_files/AllHistograms_sklearn_GBC_CvsB.root', 'SKLearn'),
-  ('CvsB_GBC_05Jan/ROCs/09d4507809_ROCs.root', 'SKLearn, Optimized'),
+# ('CvsB_76_18Jan/ROCs/82d2a6148a_ROCs.root', '7.5 Optimization'),
+# ('CvsB_76_18Jan/ROCs/ff481cb37f_ROCs.root', '7.6 Optimization'),
 ]
-output = 'pngs/optimization_CvsB.png'
+output = 'test/test.png'
 
-canvas = plt.Canvas()
+if args.input:
+   jconf = prettyjson.loads(open(args.input[-1]).read())
+   file_names = [tuple(i) for i in jconf['file_names']]
+   output = jconf['output']
+   graph_path = jconf['graph_path']
+
+#dump configuration in json for bookkeeping
+jconf = {
+   'file_names' : file_names,
+   'output' : output,
+   'graph_path' : graph_path,
+}
+
+jout = output.split('.')[0]
+with open('%s.json' % jout, 'w') as out:
+   out.write(prettyjson.dumps(jconf))
+
+canvas = plt.Canvas(800, 800)
 canvas.SetLogy();
 canvas.SetGridx();
 canvas.SetGridy();
@@ -38,12 +54,17 @@ canvas.SetGridy();
 max_txt_len = max(len(i) for _, i in file_names)
 legend = plt.Legend(
    len(file_names), 
-   leftmargin=0.23+(30-max_txt_len)*0.016,
-   rightmargin=0.01, 
-   topmargin=0.6-0.05*(len(file_names)-3), 
+   leftmargin=0.18+(30-max_txt_len)*0.016,
+   rightmargin=0.005, 
+   topmargin=0.60-0.057*(len(file_names)-3), 
    entrysep=0, 
    margin=0.1+0.006*(30-max_txt_len)
 )
+legend.SetTextSize(
+   legend.GetTextSize()*0.8
+)
+legend.SetFillColor(0)
+legend.SetFillStyle(1001)
 
 tfiles = []
 graphs = []
@@ -59,6 +80,9 @@ for name, legname in file_names:
    graph.title = legname
    graph.markerstyle = 0
    graph.legendstyle = 'l'
+   graph.yaxis.SetTitleOffset(
+      graph.yaxis.GetTitleOffset()*1.4
+      )
    legend.AddEntry(graph);
    graphs.append(
       graph
