@@ -48,6 +48,8 @@ parser.add_argument('--algo', default='RFC', help='options RFC (Random Forest) o
 parser.add_argument('--batch', action='store_true', help='batch mode')
 parser.add_argument('--category', default='*', help='category to be used for training/testing (POSIX regex)')
 parser.add_argument('--TMVAOut', action='store_true', help='return output in TMVA Style (BDT output in [-1,1] range')
+parser.add_argument('--inputs', default='data/flat_trees/qcd_flat.list', help='training file list')
+parser.add_argument('--testInputs', default='data/flat_trees/ttjets_flat.list', help='category to be used for training/testing (POSIX regex)')
 
 #parser.add_argument('--apply-pteta-weight',  dest='kin_weight', action='store_true', help='applies pt-eta weight')
 args = parser.parse_args()
@@ -67,7 +69,7 @@ codemark = TObjString(
 
 scripts_dir = os.path.join(os.environ['CTRAIN'], 'scripts')
 fname_regex = re.compile('[a-zA-Z_0-9]+_(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
-qcd_txt_path= os.path.join(scripts_dir, 'data/flat_trees/qcd_flat.list')
+qcd_txt_path= os.path.join(scripts_dir, args.inputs)
 input_files = [i.strip() for i in open(qcd_txt_path)]
 if args.category != '*':
    input_files = [i for i in input_files if fnmatch(os.path.basename(i), args.category)]
@@ -184,7 +186,7 @@ clf_val = joblib.load(training_file)
 '''
 clf_val = clf
 #fname_regex = re.compile('[a-zA-Z_0-9\/]*\/(?P<category>[a-zA-Z]+)_(?P<flavor>[A-Z]+)\.root')
-ttj_txt_path= os.path.join(scripts_dir, 'data/flat_trees/ttjets_flat.list')
+ttj_txt_path= os.path.join(scripts_dir, args.testInputs)
 input_files = [i.strip() for i in open(ttj_txt_path)]
 if args.category != '*':
    input_files = [i for i in input_files if fnmatch(os.path.basename(i), args.category)]

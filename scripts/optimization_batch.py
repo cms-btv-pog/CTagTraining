@@ -20,12 +20,12 @@ if not os.path.isdir(args.batchdir):
 
 options_to_scan = [
   ('pickEvery',[10]),
-  ('testEvery',[10]),
-  ('ntrees',[500, 1000, 2000, 3000]),
-  ('relativeSplit',[0.002, 0.004, 0.006, 0.008]),
-  ('maxDepth',[-1, 5, 8, 10, 15]),
+  ('testEvery',[1]),
+  ('ntrees',[250, 500, 1000]),
+  ('relativeSplit',[0.006]),
+  ('maxDepth',[-1, 5, 8, 15, 25]),
   ('algo',['GBC']),
-  ('learningRate',[0.05, 0.1, 0.2, 0.3, 0.4, 0.8]),
+  ('learningRate',[0.05, 0.1]),
   ('bkg',['B']),
 ##   ('pickEvery',[10]),
 ##   ('testEvery',[10]),
@@ -62,7 +62,7 @@ echo $PA
 echo "python"
 echo `which python`
 
-$CTRAIN/scripts/sklearn_training_RFC.py $PA 
+$CTRAIN/scripts/sklearn_training_trees.py $PA 
 
 exitcode=$? 
 echo "exit code: "$exitcode

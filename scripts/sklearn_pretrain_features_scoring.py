@@ -33,7 +33,6 @@ import prettyjson
 parser = ArgumentParser()
 parser.add_argument('out', help='pickle/json the ranking in one file')
 parser.add_argument('--pickEvery', type=int, default=10, help='pick one training event every')
-parser.add_argument('-o', dest='out', default='', help='pickle/json the training in one file')
 parser.add_argument('--category', default='*', help='category to be used for training/testing (POSIX regex)')
 parser.add_argument('--sample', default='qcd', help='which sample to use qcd/ttjets')
 parser.add_argument('--bkg', default='DUSG', help='background for evaluation')
