@@ -28,6 +28,7 @@ from fnmatch import fnmatch
 import localsettings as site
 import pickle
 import features
+import sklearn_to_tmva as convert
 
 parser = ArgumentParser()
 parser.add_argument('trainingTag', help='Tag to be used')
