@@ -1,7 +1,7 @@
 # CTagTraining
 Training and Validation of the CMS charm tagger.
-This repository is used to make changes to the standalone TMVA based charm tagger. 
-Not for CMSSW integrated charm tagger.
+This repository is used to make changes to the standalone Scikit-Learn based charm tagger. 
+Not for CMSSW integrated charm tagger. Old TMVA based charm-tagger can be found on legacy branch.
 
 ============
 Installation
