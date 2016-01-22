@@ -83,7 +83,7 @@ def test_file(inname, outname, train_file, variables, testEvery):
          for var in variables:
             in_tree.SetBranchStatus(var, 1)
          for idx, entry in enumerate(in_tree):
-            if (idx % testEvery) == 0: continue
+            if testEvery != 1 and (idx % testEvery) == 0: continue
             var_vals = [getattr(entry, i) for i in variables]
             btd_out = bdt.predict_proba([var_vals])[0][1]
             out_tree.flavour = entry.flavour
