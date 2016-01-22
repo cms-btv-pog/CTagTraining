@@ -46,6 +46,7 @@ parser.add_argument('--signal', default='C', help='signal for training')
 parser.add_argument('--bkg', default='DUSG', help='background for training')
 parser.add_argument('--algo', default='RFC', help='options RFC (Random Forest) or GBC (Gradient boost)')
 parser.add_argument('--batch', action='store_true', help='batch mode')
+parser.add_argument('--skipnew', action='store_true', help='skip new features')
 parser.add_argument('--category', default='*', help='category to be used for training/testing (POSIX regex)')
 parser.add_argument('--TMVAOut', action='store_true', help='return output in TMVA Style (BDT output in [-1,1] range')
 parser.add_argument('--inputs', default='data/flat_trees/qcd_flat.list', help='training file list')
@@ -73,7 +74,7 @@ qcd_txt_path= os.path.join(scripts_dir, args.inputs)
 input_files = [i.strip() for i in open(qcd_txt_path)]
 if args.category != '*':
    input_files = [i for i in input_files if fnmatch(os.path.basename(i), args.category)]
-   variables = features.general
+   variables = features.general+features.new if not args.skipnew else features.general
    #add vtx vars
    if 'RecoVertex' in args.category:
       log.info('adding SV input variables')
@@ -95,6 +96,8 @@ if args.category != '*':
 else:
    log.info('No category selection, using all the input variables')
    variables=features.general+features.vertex+features.leptons
+   if not args.skipnew:
+      variables.extend(features.new)
 if args.batch:
    #use xrootd to fetch file in batch mode
    input_files = [ site.local_2_xrd(i) for i in input_files]
