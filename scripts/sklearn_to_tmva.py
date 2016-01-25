@@ -174,3 +174,62 @@ def evaluate_sklearn(cls, vals, coef=10):
         ret += r[0,0]
     #print 2.0/(1.0+np.exp(-2.0*ret))-1
     return 2.0/(1.0+np.exp(-2.0*ret))-1
+
+if __name__ == '__main__':
+  from argparse import ArgumentParser
+  import features
+  from sklearn.externals import joblib
+  from fnmatch import fnmatch
+  import root_numpy as rootnp
+  import numpy as np
+
+  parser = ArgumentParser()
+  parser.add_argument('inpickle', help='pickle containing the training')
+  parser.add_argument('outxml', help='output xml file name')
+  parser.add_argument('trainig', help='training file list')
+  parser.add_argument('--bkg', default='DUSG', help='background for training')
+  parser.add_argument('--pickEvery', type=int, default=10, help='pick one training event every')  
+  parser.add_argument('--skipnew', action='store_true', help='skip new features')
+  parser.add_argument('--category', default='*', help='category to be used for training/testing (POSIX regex)')
+  args = parser.parse_args()
+
+  input_files = [i.strip() for i in open(args.trainig)]
+  input_files = [i for i in input_files if i.endswith('_C.root') or i.endswith('_%s.root' % args.bkg)]
+  if args.category != '*':
+    input_files = [i for i in input_files if fnmatch(os.path.basename(i), args.category)]
+    variables = features.general+features.new if not args.skipnew else features.general
+    #add vtx vars
+    if 'RecoVertex' in args.category:
+      variables.extend(features.vertex)
+    elif 'NoVertex' in args.category or 'PseudoVertex' in args.category:
+      pass
+    else:
+      log.info('Category selection does not specify SV type, adding SV input variables for safety')
+      variables.extend(features.vertex)
+    #add lep vars
+    if 'SoftElectron' in args.category or 'SoftMuon' in args.category:
+      variables.extend(features.leptons)
+    elif 'NoSoftLepton' in args.category:
+      pass
+    else:
+      variables.extend(features.leptons)
+  else:
+    variables=features.general+features.vertex+features.leptons
+    if not args.skipnew:
+      variables.extend(features.new)
+
+  X = np.ndarray((0,len(variables)),float)
+  for fname in input_files:
+    tree = rootnp.root2array(
+      fname, 'tree', variables, None,
+      0, None, args.pickEvery, False, 'weight')
+    tree = rootnp.rec2array(tree)
+    X = np.concatenate((X, tree),0)
+
+  clf = joblib.load(args.inpickle)
+  gbr_to_tmva(
+    clf, X, args.outxml,
+    mva_name = "BDTG",
+    coef = 10, 
+    var_names = variables
+  )

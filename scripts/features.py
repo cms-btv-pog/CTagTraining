@@ -25,15 +25,11 @@ general = [
   "jetNTracks",
   "trackSumJetEtRatio",
   "trackSumJetDeltaR",
+]
 
-  ##NEW ONES
+##NEW ONES
+new = [
   'jetPtD_0',
-  'sumRelConcentricEnergyAroundJetAxis_5',
-  'sumRelConcentricEnergyAroundJetAxis_4',
-  'sumRelConcentricEnergyAroundJetAxis_1',
-  'sumRelConcentricEnergyAroundJetAxis_0',
-  'sumRelConcentricEnergyAroundJetAxis_3',
-  'sumRelConcentricEnergyAroundJetAxis_2',
   'relConcentricEnergyAroundJetAxis_3',
   'relConcentricEnergyAroundJetAxis_2',
   'relConcentricEnergyAroundJetAxis_1',
