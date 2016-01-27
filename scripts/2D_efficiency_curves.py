@@ -7,8 +7,8 @@ from argparse import ArgumentParser
 
 
 parser = ArgumentParser()
-parser.add_argument('--min', default=0, help='lower bound of the discriminator')
-parser.add_argument('--max', default=1, help='upper bound of the discriminator')
+parser.add_argument('--min', type=float, default=0, help='lower bound of the discriminator')
+parser.add_argument('--max',  type=float, default=1, help='upper bound of the discriminator')
 parser.add_argument('--ncuts', type=int, default=200, help='number of cuts/bins to make the plots (i.e. the refinement of the calculation)')
 parser.add_argument('--outdir', default=os.getcwd(), help='directory of the output file')
 parser.add_argument('--indirCvsDUSG', default=os.getcwd(), help='directory of the input files of the CvsDUSG training (trainPlusBDTG_...)')
@@ -40,8 +40,8 @@ disc_min = args.min
 disc_max = args.max
 ncuts = args.ncuts
 
-CvsDUSG_Disc = np.arange(disc_min,disc_max,1./ncuts)
-CvsB_Disc = np.arange(disc_min,disc_max,1./ncuts)
+CvsDUSG_Disc = np.arange(disc_min,disc_max,(disc_max-disc_min)/ncuts)
+CvsB_Disc = np.arange(disc_min,disc_max,(disc_max-disc_min)/ncuts)
 
 Plot_2D_B = ROOT.TH2D("Plot_2D_B"," ;#Delta CvsDUSG;#Delta CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
 Plot_2D_C = ROOT.TH2D("Plot_2D_C"," ;#Delta CvsDUSG;#Delta CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
@@ -226,16 +226,18 @@ Const_C_eff = [0.2,0.25,0.3,0.35,0.4,0.45,0.5]
 Colors = [1,2,3,4,6,7,8]
 Styles = [24,25,26,27,28,30,32]
 npoints = Eff_vs_Disc_2D_C.GetN()
+npoints_B = Eff_vs_Disc_2D_B.GetN()
+npoints_DUSG = Eff_vs_Disc_2D_DUSG.GetN()
 C_points = Eff_vs_Disc_2D_C.GetZ()
 B_points = Eff_vs_Disc_2D_B.GetZ()
 DUSG_points = Eff_vs_Disc_2D_DUSG.GetZ()
-assert(len(C_points) == len(B_points) and len(C_points) == len(DUSG_points))
+assert(npoints == npoints_B and npoints == npoints_DUSG)
 graphs = []
 
 for jdx,j in enumerate(Const_C_eff):
 	graphs.insert(jdx, ROOT.TGraph())
 	point_number = 0
-	for idx in xrange(ncuts*ncuts-1):
+	for idx in xrange(npoints-1): 
 		if math.fabs(C_points[idx]-j)<0.002 and B_points[idx] > 0.001 and DUSG_points[idx] > 0.001 and B_points[idx] < 1 and DUSG_points[idx] < 1:
 			graphs[jdx].SetPoint(point_number,1./B_points[idx],1./DUSG_points[idx])
 			point_number+=1
