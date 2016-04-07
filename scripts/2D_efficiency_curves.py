@@ -14,6 +14,7 @@ parser.add_argument('--outdir', default=os.getcwd(), help='directory of the outp
 parser.add_argument('--indirCvsDUSG', default=os.getcwd(), help='directory of the input files of the CvsDUSG training (trainPlusBDTG_...)')
 parser.add_argument('--indirCvsB', default=os.getcwd(), help='directory of the input files of the CvsDUSG training (trainPlusBDTG_...)')
 parser.add_argument('--pickEvery', type=int, default=1, help='pick one event every so many events')
+parser.add_argument('--jetPtCut', type=int, default=20, help='Take only jets with pT larger than ...')
 
 args = parser.parse_args()
 
@@ -43,9 +44,9 @@ ncuts = args.ncuts
 CvsDUSG_Disc = np.arange(disc_min,disc_max,(disc_max-disc_min)/ncuts)
 CvsB_Disc = np.arange(disc_min,disc_max,(disc_max-disc_min)/ncuts)
 
-Plot_2D_B = ROOT.TH2D("Plot_2D_B"," ;#Delta CvsDUSG;#Delta CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
-Plot_2D_C = ROOT.TH2D("Plot_2D_C"," ;#Delta CvsDUSG;#Delta CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
-Plot_2D_DUSG = ROOT.TH2D("Plot_2D_DUSG"," ;#Delta CvsDUSG;#Delta CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
+Plot_2D_B = ROOT.TH2D("Plot_2D_B"," ;Discriminator CvsL;Discriminator CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
+Plot_2D_C = ROOT.TH2D("Plot_2D_C"," ;Discriminator CvsL;Discriminator CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
+Plot_2D_DUSG = ROOT.TH2D("Plot_2D_DUSG"," ;Discriminator CvsL;Discriminator CvsB",ncuts,disc_min,disc_max,ncuts,disc_min,disc_max)
 
 CvsDUSG_Disc_bin = []
 CvsB_Disc_bin = []
@@ -82,6 +83,8 @@ for i in xrange(CvsDUSG_B_nen):
 		continue
 	CvsDUSG_B_tree.GetEntry(i);
 	CvsB_B_tree.GetEntry(i);
+	if CvsDUSG_B_tree.jetPt < args.jetPtCut:
+		continue
 	Plot_2D_B.Fill(CvsDUSG_B_tree.BDTG,CvsB_B_tree.BDTG)
 	
 Total_Integral_B = Plot_2D_B.Integral(0,ncuts,0,ncuts);
@@ -99,6 +102,8 @@ for i in xrange(CvsDUSG_C_nen):
 		continue
 	CvsDUSG_C_tree.GetEntry(i);
 	CvsB_C_tree.GetEntry(i);
+	if CvsDUSG_C_tree.jetPt < args.jetPtCut:
+		continue
 	Plot_2D_C.Fill(CvsDUSG_C_tree.BDTG,CvsB_C_tree.BDTG)
 	
 Total_Integral_C = Plot_2D_C.Integral(0,ncuts,0,ncuts);
@@ -116,6 +121,8 @@ for i in xrange(CvsDUSG_DUSG_nen):
 		continue
 	CvsDUSG_DUSG_tree.GetEntry(i);
 	CvsB_DUSG_tree.GetEntry(i);
+	if CvsDUSG_DUSG_tree.jetPt < args.jetPtCut:
+		continue
 	Plot_2D_DUSG.Fill(CvsDUSG_DUSG_tree.BDTG,CvsB_DUSG_tree.BDTG)
 	
 Total_Integral_DUSG = Plot_2D_DUSG.Integral(0,ncuts,0,ncuts);
@@ -129,8 +136,10 @@ for idx,i in enumerate(CvsDUSG_Disc):
 
 cc = ROOT.TCanvas("cc","cc",1100,700)
 cc.Divide(2,2)
-l = ROOT.TLegend(0.73,0.7,0.93,0.93)
+c_sc = ROOT.TCanvas("c_sc","c_sc",700,600)
+l = ROOT.TLegend(0.20,0.20,0.40,0.43)
 l.SetFillColor(0)
+l.SetBorderSize(0)
 
 
 Plot_2D_B.GetYaxis().SetTitleOffset(0.9)
@@ -152,12 +161,17 @@ Plot_2D_DUSG.GetXaxis().SetTitleSize(0.065)
 Plot_2D_DUSG.GetXaxis().SetLabelSize(0.055)
 Plot_2D_DUSG.GetZaxis().SetLabelSize(0.055)
 
-Plot_2D_B.SetMarkerColor(ROOT.kGreen)
-Plot_2D_B.SetFillColor(ROOT.kGreen)
+Plot_2D_B.SetMarkerColor(ROOT.kRed)
+Plot_2D_B.SetFillColor(ROOT.kRed)
 Plot_2D_B.SetMarkerStyle(6)
 l.AddEntry(Plot_2D_B,"B","f")
 cc.cd(4)
 ROOT.gPad.SetMargin(0.13,0.07,0.13,0.07)
+Plot_2D_B.Draw()
+c_sc.cd()
+ROOT.gPad.SetMargin(0.13,0.07,0.13,0.07)
+ROOT.gPad.SetTickx(1)
+ROOT.gPad.SetTicky(1)
 Plot_2D_B.Draw()	
 cc.cd(1)
 ROOT.gStyle.SetOptStat(0)
@@ -171,12 +185,14 @@ ROOT.gPad.SetLogz(1)
 Plot_2D_B.Draw("COLZ")
 l_B.Draw("same")
 
-Plot_2D_C.SetMarkerColor(ROOT.kBlue)
-Plot_2D_C.SetFillColor(ROOT.kBlue)
+Plot_2D_C.SetMarkerColor(ROOT.kGreen)
+Plot_2D_C.SetFillColor(ROOT.kGreen)
 Plot_2D_C.SetMarkerStyle(6)
 l.AddEntry(Plot_2D_C,"C","f")
 cc.cd(4)
 Plot_2D_C.Draw("same")	
+c_sc.cd()
+Plot_2D_C.Draw("same")
 cc.cd(2)
 ROOT.gStyle.SetOptStat(0)
 l_DUSG = ROOT.TLegend(0.73,0.8,0.85,0.9)
@@ -189,11 +205,13 @@ ROOT.gPad.SetLogz(1)
 Plot_2D_DUSG.Draw("COLZ")
 l_DUSG.Draw("same")
 
-Plot_2D_DUSG.SetMarkerColor(ROOT.kRed)
-Plot_2D_DUSG.SetFillColor(ROOT.kRed)
+Plot_2D_DUSG.SetMarkerColor(ROOT.kBlue)
+Plot_2D_DUSG.SetFillColor(ROOT.kBlue)
 Plot_2D_DUSG.SetMarkerStyle(6)
 l.AddEntry(Plot_2D_DUSG,"DUSG","f")
 cc.cd(4)
+Plot_2D_DUSG.Draw("same")
+c_sc.cd()
 Plot_2D_DUSG.Draw("same")	
 cc.cd(3)
 ROOT.gStyle.SetOptStat(0)
@@ -208,8 +226,13 @@ Plot_2D_C.Draw("COLZ")
 l_C.Draw("same")
 
 cc.cd(4)
-l.Draw("same")	
+l.Draw("same")
+c_sc.cd()
+l.Draw("same")
 cc.SaveAs(args.outdir+'/2D_BDTG_Plot.png')
+cc.SaveAs(args.outdir+'/2D_BDTG_Plot.pdf')
+c_sc.SaveAs(args.outdir+'/2D_BDTG_Plot_Scatter.png')
+c_sc.SaveAs(args.outdir+'/2D_BDTG_Plot_Scatter.pdf')
 
 
 
@@ -220,11 +243,11 @@ cc.SaveAs(args.outdir+'/2D_BDTG_Plot.png')
 mg = ROOT.TMultiGraph()
 mg.SetMinimum(1)
 mg.SetMaximum(200)
-ll = ROOT.TLegend(0.7,0.6,0.90,0.90)
+ll = ROOT.TLegend(0.7,0.35,0.90,0.90)
 
-Const_C_eff = [0.2,0.25,0.3,0.35,0.4,0.45,0.5]
-Colors = [1,2,3,4,6,7,8]
-Styles = [24,25,26,27,28,30,32]
+Const_C_eff = [0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.6,0.7,0.8,0.9]
+Colors = [1,2,3,4,6,7,8,9,28,ROOT.kOrange,ROOT.kPink-7]
+Styles = [24,25,26,27,28,30,32,33,34,20,21]
 npoints = Eff_vs_Disc_2D_C.GetN()
 npoints_B = Eff_vs_Disc_2D_B.GetN()
 npoints_DUSG = Eff_vs_Disc_2D_DUSG.GetN()
@@ -246,7 +269,7 @@ for jdx,j in enumerate(Const_C_eff):
 	graphs[jdx].SetMarkerStyle(Styles[jdx])
 	graphs[jdx].SetLineColor(Colors[jdx])
 	graphs[jdx].SetLineWidth(2)
-	ll.AddEntry(graphs[jdx],"#epsilon^{C} = " + str(j),"p")
+	ll.AddEntry(graphs[jdx],"#epsilon^{c} = " + str(j),"p")
 	mg.Add(graphs[jdx])
 
 ROOT.gStyle.SetOptStat(0)
@@ -256,13 +279,30 @@ ROOT.gPad.SetLogx(1)
 ROOT.gPad.SetLogy(1)
 ROOT.gPad.SetGrid(1,1)
 mg.Draw("ALP")
-mg.GetYaxis().SetTitle("Light Rejection (1/#epsilon^{light})")
-mg.GetXaxis().SetTitle("B Rejection (1/#epsilon^{B})")
-mg.GetXaxis().SetLimits(1.,40.)
+mg.GetYaxis().SetTitle("light rejection (1/#epsilon^{light})")
+mg.GetYaxis().SetTitleOffset(1.2)
+mg.GetXaxis().SetTitle("bottom rejection (1/#epsilon^{b})")
+mg.GetXaxis().SetTitleOffset(1.1)
+mg.GetXaxis().SetLimits(1.,100.)
 ROOT.gPad.Modified()
 ll.Draw("same")
 
+pt1 = ROOT.TPaveText(0.1,0.91,0.9,0.99,"NBNDC")
+pt1.AddText("CMS preliminary    t#bar{t} simulation at #sqrt{s} = 13 TeV")
+pt1.SetTextFont(82)
+pt2 = ROOT.TPaveText(0.7,0.24,0.90,0.34,"NBNDC")
+pt2.AddText("#splitline{ p_{T}^{jet} > " + str(args.jetPtCut) + " GeV}{#cbar#eta^{jet}#cbar < 2.4}")
+pt2.SetTextFont(82)
+pt1.SetFillColor(0)
+pt2.SetFillColor(0)
+pt1.SetFillStyle(3004)
+pt1.SetBorderSize(0)
+pt2.SetBorderSize(1)
+pt1.Draw("same")
+pt2.Draw("same")
+
 c.SaveAs(args.outdir+'/Eff_BvsDUSG_Cte_C.png')
+c.SaveAs(args.outdir+'/Eff_BvsDUSG_Cte_C.pdf')
 
 os.system('rm ' + os.getcwd() + '/*CvsDUSG_*_tmp.root')
 os.system('rm ' + os.getcwd() + '/*CvsB_*_tmp.root')
